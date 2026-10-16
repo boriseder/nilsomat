@@ -14,7 +14,39 @@
 
   const { section, items, onBack, onSelectItem, titleOverride }: Props = $props();
 
+  const storageKey = $derived(
+    titleOverride ? 'nilsomat_series_view_mode' : `nilsomat_${section}_view_mode`
+  );
+
+  function getStoredViewMode(key: string): 'grid' | 'list' {
+    if (typeof window === 'undefined') return 'grid';
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved === 'grid' || saved === 'list') {
+        return saved;
+      }
+    } catch {
+      // Ignore
+    }
+    return 'grid';
+  }
+
   let viewMode = $state<'grid' | 'list'>('grid');
+
+  $effect(() => {
+    // Wenn sich die Ansicht (z. B. Wechsel in eine Serie) ändert, gemerkten Modus laden
+    const saved = getStoredViewMode(storageKey);
+    viewMode = saved;
+  });
+
+  function setViewMode(mode: 'grid' | 'list'): void {
+    viewMode = mode;
+    try {
+      localStorage.setItem(storageKey, mode);
+    } catch {
+      // Ignore
+    }
+  }
 
   const sectionTitle = $derived(
     titleOverride ||
@@ -65,7 +97,7 @@
         type="button"
         class="btn-toggle-view"
         class:active={viewMode === 'grid'}
-        onclick={() => (viewMode = 'grid')}
+        onclick={() => setViewMode('grid')}
         aria-label={strings.kid.views.grid}
       >
         <Icon name="grid" size={22} />
@@ -75,7 +107,7 @@
         type="button"
         class="btn-toggle-view"
         class:active={viewMode === 'list'}
-        onclick={() => (viewMode = 'list')}
+        onclick={() => setViewMode('list')}
         aria-label={strings.kid.views.list}
       >
         <Icon name="list" size={22} />

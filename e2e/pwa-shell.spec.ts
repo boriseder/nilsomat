@@ -117,6 +117,90 @@ test.describe('Hörbox PWA-Shell auf iPad WebKit', () => {
     await expect(booksTile).toBeVisible();
   });
 
+  test('Persistierung der Auswahl Kachel oder Liste in der Series-Übersicht', async ({ page }) => {
+    await page.route('/api/kid/items?section=books', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: [
+            {
+              id: 'abs:lib1:series1',
+              section: 'books',
+              kind: 'series',
+              title: 'Pumuckl',
+              bookCount: 2,
+              coverUrl: '/media/cover/abs:lib1:book1?w=640'
+            }
+          ]
+        })
+      });
+    });
+
+    await page.route('**/api/kid/series/**/items', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: [
+            {
+              id: 'abs:lib1:b1',
+              section: 'books',
+              kind: 'audiobook',
+              title: 'Pumuckl Folge 1',
+              sequence: '1',
+              coverUrl: '/media/cover/abs:lib1:b1?w=640'
+            },
+            {
+              id: 'abs:lib1:b2',
+              section: 'books',
+              kind: 'audiobook',
+              title: 'Pumuckl Folge 2',
+              sequence: '2',
+              coverUrl: '/media/cover/abs:lib1:b2?w=640'
+            }
+          ]
+        })
+      });
+    });
+
+    await page.goto('/');
+
+    // Klick auf Hörbücher
+    await page.locator('.tile-books').click();
+
+    // Klick auf die Serie Pumuckl
+    await page.locator('.item-card').first().click();
+
+    // In der Serie auf Listendarstellung schalten
+    const listToggleBtn = page.locator('.btn-toggle-view').filter({ hasText: 'Liste' });
+    await expect(listToggleBtn).toBeVisible();
+    await listToggleBtn.click();
+
+    // Prüfen, ob Zeilen sichtbar sind
+    await expect(page.locator('.item-list-row')).toHaveCount(2);
+
+    // localStorage prüfen
+    const stored = await page.evaluate(() => localStorage.getItem('nilsomat_series_view_mode'));
+    expect(stored).toBe('list');
+
+    // Zurück zum Hörbücher-Raster
+    await page.locator('.btn-back').click();
+
+    // Erneut in die Serie gehen
+    await page.locator('.item-card').first().click();
+
+    // Sollte direkt als Liste geöffnet werden (gemerkt!)
+    await expect(page.locator('.item-list-row')).toHaveCount(2);
+
+    // Auf Kacheln zurückschalten
+    await page.locator('.btn-toggle-view').filter({ hasText: 'Kacheln' }).click();
+    await expect(page.locator('.item-card')).toHaveCount(2);
+
+    const storedGrid = await page.evaluate(() => localStorage.getItem('nilsomat_series_view_mode'));
+    expect(storedGrid).toBe('grid');
+  });
+
   test('Versteckter Elternbereich-Einstieg per Long-Press auf Logo', async ({ page }) => {
     await page.goto('/');
 
