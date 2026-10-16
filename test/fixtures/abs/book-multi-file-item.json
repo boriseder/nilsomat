@@ -1,0 +1,41 @@
+{
+  "id": "book-item-2",
+  "ino": "1002",
+  "libraryId": "lib-books-1",
+  "mediaType": "book",
+  "media": {
+    "metadata": {
+      "title": "Geschichten aus dem Zauberwald",
+      "author": "Klaus Märchen",
+      "narrator": "Lisa Erzählerin"
+    },
+    "coverPath": "/metadata/items/book-item-2/cover.jpg",
+    "duration": 1200,
+    "numAudioFiles": 2,
+    "numChapters": 0,
+    "audioFiles": [
+      {
+        "index": 1,
+        "ino": "audio-file-2-1",
+        "metadata": {
+          "filename": "01_zauberwald_teil1.mp3",
+          "ext": "mp3"
+        },
+        "duration": 550,
+        "mimeType": "audio/mpeg"
+      },
+      {
+        "index": 2,
+        "ino": "audio-file-2-2",
+        "metadata": {
+          "filename": "02_zauberwald_teil2.mp3",
+          "ext": "mp3"
+        },
+        "duration": 650,
+        "mimeType": "audio/mpeg"
+      }
+    ],
+    "chapters": []
+  },
+  "updatedAt": 1710001000000
+}

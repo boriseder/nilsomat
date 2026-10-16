@@ -1,0 +1,16 @@
+{
+  "libraries": [
+    {
+      "id": "lib-books-1",
+      "name": "Kinder-Hörbücher",
+      "mediaType": "book",
+      "icon": "audiobookshelf"
+    },
+    {
+      "id": "lib-podcasts-2",
+      "name": "Kinder-Podcasts",
+      "mediaType": "podcast",
+      "icon": "podcast"
+    }
+  ]
+}

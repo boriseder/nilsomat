@@ -1,0 +1,50 @@
+{
+  "id": "book-item-1",
+  "ino": "1001",
+  "libraryId": "lib-books-1",
+  "mediaType": "book",
+  "media": {
+    "metadata": {
+      "title": "Die kleinen Abenteurer",
+      "author": "Erika Muster",
+      "narrator": "Hans Sprecher"
+    },
+    "coverPath": "/metadata/items/book-item-1/cover.jpg",
+    "duration": 1800,
+    "numAudioFiles": 1,
+    "numChapters": 3,
+    "audioFiles": [
+      {
+        "index": 1,
+        "ino": "audio-file-1",
+        "metadata": {
+          "filename": "die_kleinen_abenteurer.m4b",
+          "ext": "m4b"
+        },
+        "duration": 1800,
+        "mimeType": "audio/mp4"
+      }
+    ],
+    "chapters": [
+      {
+        "id": 0,
+        "start": 0,
+        "end": 600,
+        "title": "Kapitel 1: Der geheime Baum"
+      },
+      {
+        "id": 1,
+        "start": 600,
+        "end": 1200,
+        "title": "Kapitel 2: Die alte Karte"
+      },
+      {
+        "id": 2,
+        "start": 1200,
+        "end": 1800,
+        "title": "Kapitel 3: Der Schatz am See"
+      }
+    ]
+  },
+  "updatedAt": 1710000000000
+}

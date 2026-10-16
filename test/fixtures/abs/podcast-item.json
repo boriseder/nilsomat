@@ -1,0 +1,43 @@
+{
+  "id": "podcast-item-1",
+  "ino": "2001",
+  "libraryId": "lib-podcasts-2",
+  "mediaType": "podcast",
+  "media": {
+    "metadata": {
+      "title": "Wissensfunken für Kinder",
+      "author": "Dr. Neugierig",
+      "description": "Spannende Fragen aus Natur und Technik einfach erklärt."
+    },
+    "coverPath": "/metadata/items/podcast-item-1/cover.jpg",
+    "episodes": [
+      {
+        "id": "ep-101",
+        "title": "Warum ist der Himmel blau?",
+        "publishedAt": 1710500000000,
+        "duration": 720,
+        "audioFile": {
+          "ino": "ep-audio-101",
+          "metadata": {
+            "filename": "folge_101_himmel.mp3"
+          },
+          "mimeType": "audio/mpeg"
+        }
+      },
+      {
+        "id": "ep-102",
+        "title": "Wie schlafen Fische?",
+        "publishedAt": 1710600000000,
+        "duration": 680,
+        "audioFile": {
+          "ino": "ep-audio-102",
+          "metadata": {
+            "filename": "folge_102_fische.mp3"
+          },
+          "mimeType": "audio/mpeg"
+        }
+      }
+    ]
+  },
+  "updatedAt": 1710600000000
+}

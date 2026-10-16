@@ -1,0 +1,10 @@
+{
+  "id": "progress-1",
+  "libraryItemId": "book-item-1",
+  "currentTime": 450,
+  "duration": 1800,
+  "progress": 0.25,
+  "isFinished": false,
+  "lastUpdate": 1710005000000,
+  "startedAt": 1710000000000
+}
