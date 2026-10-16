@@ -136,8 +136,24 @@
 
         if (itemTracks.length > 0) {
           showFullscreenPlayer = true;
-          const startOffset = item.progress?.positionSec || 0;
-          await audioEngine.playItem(item, itemTracks, 0, startOffset);
+          const totalPositionSec = item.progress?.positionSec || 0;
+          let targetIndex = 0;
+          let targetOffset = 0;
+
+          if (totalPositionSec > 0 && !item.progress?.finished) {
+            let accumulated = 0;
+            for (let i = 0; i < itemTracks.length; i++) {
+              const dur = itemTracks[i].durationSec || 0;
+              if (accumulated + dur > totalPositionSec) {
+                targetIndex = i;
+                targetOffset = totalPositionSec - accumulated;
+                break;
+              }
+              accumulated += dur;
+            }
+          }
+
+          await audioEngine.playItem(item, itemTracks, targetIndex, targetOffset);
         }
       } catch {
         loading = false;

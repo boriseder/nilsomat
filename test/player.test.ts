@@ -100,5 +100,20 @@ describe('Player & Sleep-Timer (AGENTS.md Abschnitt 5.2 & 7)', () => {
 
     expect(receivedState).not.toBeNull();
     unsub();
+
+    // playItem lädt Track 0
+    await audioEngine.playItem(testItem, testTracks, 0);
+    expect(audioEngine.getState().trackIndex).toBe(0);
+    expect(audioEngine.getState().currentTrack?.id).toBe('abs:lib1:book1:ch1');
+
+    // next() schaltet auf Track 1 weiter (darauffolgende Kapitel werden korrekt angespielt)
+    audioEngine.next();
+    expect(audioEngine.getState().trackIndex).toBe(1);
+    expect(audioEngine.getState().currentTrack?.id).toBe('abs:lib1:book1:ch2');
+
+    // previous() schaltet zurück auf Track 0
+    audioEngine.seek(0);
+    audioEngine.previous();
+    expect(audioEngine.getState().trackIndex).toBe(0);
   });
 });

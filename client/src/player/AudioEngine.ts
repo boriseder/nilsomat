@@ -112,8 +112,23 @@ class AudioEngine {
     });
 
     this.audio.addEventListener('timeupdate', () => {
-      if (this.audio) {
-        this.currentTime = this.audio.currentTime;
+      if (this.audio && this.currentTrack) {
+        const trackStart = this.currentTrack.startOffsetSec || 0;
+        const trackDuration = this.currentTrack.durationSec || 0;
+
+        if (trackStart > 0) {
+          const rel = Math.max(0, this.audio.currentTime - trackStart);
+          this.currentTime = rel;
+
+          // Falls Kapitel in Einzeldatei sein Ende erreicht hat
+          if (trackDuration > 0 && rel >= trackDuration) {
+            this.next();
+            return;
+          }
+        } else {
+          this.currentTime = this.audio.currentTime;
+        }
+
         this.updateMediaSessionPosition();
         this.notify();
       }
@@ -121,8 +136,10 @@ class AudioEngine {
 
     this.audio.addEventListener('durationchange', () => {
       if (this.audio && Number.isFinite(this.audio.duration)) {
-        this.duration = this.audio.duration;
-        this.notify();
+        if (!this.currentTrack?.durationSec) {
+          this.duration = this.audio.duration;
+          this.notify();
+        }
       }
     });
 
@@ -196,21 +213,43 @@ class AudioEngine {
 
     this.currentTrack = track;
     this.duration = track.durationSec || 0;
-    this.currentTime = startOffsetSec || track.startOffsetSec || 0;
+    const initialOffset = startOffsetSec !== undefined ? startOffsetSec : (track.startOffsetSec || 0);
+    this.currentTime = initialOffset;
     this.isLoading = true;
     this.notify();
 
-    // Stream-URL setzen und abspielen
-    this.audio.src = track.streamUrl;
-    if (this.currentTime > 0) {
-      this.audio.currentTime = this.currentTime;
-    }
+    const targetSrc = track.streamUrl;
+    const isSameSrc = Boolean(this.audio.src && this.audio.src.endsWith(targetSrc));
 
-    this.audio.play().catch(() => {
-      this.isPlaying = false;
-      this.isLoading = false;
-      this.notify();
-    });
+    if (isSameSrc) {
+      try {
+        const audioPos = (track.startOffsetSec || 0) + initialOffset;
+        this.audio.currentTime = audioPos;
+      } catch {}
+      this.audio.play().catch(() => {
+        this.isPlaying = false;
+        this.isLoading = false;
+        this.notify();
+      });
+    } else {
+      this.audio.src = targetSrc;
+      const audioPos = (track.startOffsetSec || 0) + initialOffset;
+      if (audioPos > 0) {
+        const onLoaded = () => {
+          if (this.audio) {
+            try {
+              this.audio.currentTime = audioPos;
+            } catch {}
+          }
+        };
+        this.audio.addEventListener('loadedmetadata', onLoaded, { once: true });
+      }
+      this.audio.play().catch(() => {
+        this.isPlaying = false;
+        this.isLoading = false;
+        this.notify();
+      });
+    }
   }
 
   public async play(): Promise<void> {
@@ -238,27 +277,45 @@ class AudioEngine {
   public seek(targetSec: number): void {
     if (!this.audio) return;
     const clamped = Math.max(0, Math.min(targetSec, this.duration || Infinity));
-    this.audio.currentTime = clamped;
+    const audioPos = (this.currentTrack?.startOffsetSec || 0) + clamped;
+    this.audio.currentTime = audioPos;
     this.currentTime = clamped;
     this.updateMediaSessionPosition();
     this.notify();
   }
 
   public rewind30(): void {
-    this.seek(this.currentTime - 30);
+    if (this.currentTime >= 30) {
+      this.seek(this.currentTime - 30);
+    } else if (this.trackIndex > 0) {
+      const prevTrack = this.playlist[this.trackIndex - 1];
+      const prevDuration = prevTrack?.durationSec || 0;
+      const targetOffset = Math.max(0, prevDuration - (30 - this.currentTime));
+      this.playItem(this.currentItem!, this.playlist, this.trackIndex - 1, targetOffset);
+    } else {
+      this.seek(0);
+    }
   }
 
   public forward30(): void {
-    this.seek(this.currentTime + 30);
+    if (this.currentTime + 30 < this.duration) {
+      this.seek(this.currentTime + 30);
+    } else if (this.trackIndex < this.playlist.length - 1) {
+      const overflow = this.currentTime + 30 - this.duration;
+      this.playItem(this.currentItem!, this.playlist, this.trackIndex + 1, overflow);
+    } else {
+      this.seek(this.duration);
+    }
   }
 
   public next(): void {
     if (this.trackIndex < this.playlist.length - 1) {
       const nextIndex = this.trackIndex + 1;
-      this.playItem(this.currentItem!, this.playlist, nextIndex);
+      this.playItem(this.currentItem!, this.playlist, nextIndex, 0);
     } else {
       this.pause();
       this.seek(0);
+      this.saveCurrentProgress(true);
     }
   }
 
@@ -267,7 +324,7 @@ class AudioEngine {
       this.seek(0);
     } else {
       const prevIndex = this.trackIndex - 1;
-      this.playItem(this.currentItem!, this.playlist, prevIndex);
+      this.playItem(this.currentItem!, this.playlist, prevIndex, 0);
     }
   }
 
@@ -296,16 +353,24 @@ class AudioEngine {
     if (!this.currentItem || this.currentItem.section === 'music') return;
 
     const itemId = this.currentItem.id;
-    const positionSec = Math.round(this.currentTime);
-    const durationSec = Math.round(this.duration);
+    let totalPosition = Math.round(this.currentTime);
+    let totalDuration = 0;
+
+    for (let i = 0; i < this.playlist.length; i++) {
+      const d = this.playlist[i].durationSec || 0;
+      totalDuration += d;
+      if (i < this.trackIndex) {
+        totalPosition += d;
+      }
+    }
 
     try {
       fetch(`/api/kid/progress/${encodeURIComponent(itemId)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          positionSec,
-          durationSec,
+          positionSec: totalPosition,
+          durationSec: totalDuration,
           finished
         }),
         keepalive: true

@@ -315,11 +315,33 @@ export class AudiobookshelfProvider implements ContentProvider {
           });
         });
       } else {
-        // Buch: Kapitel oder Audiodateien normalisieren
+        // Buch: Kapitel oder Audiodateien normalisieren (AGENTS.md Abschnitt 4.1)
         const chapters: any[] = item.media?.chapters || [];
         const audioFiles: any[] = item.media?.audioFiles || [];
 
-        if (chapters.length > 0) {
+        if (audioFiles.length > 1) {
+          // Mehrdatei-Hörbuch: Jede Audiodatei ist eine spielbare Einheit (Track)
+          audioFiles.forEach((af, idx) => {
+            const fileId = af.ino || af.id || `${idx}`;
+            const trackId = this.makeTrackId(parsed.libraryId, parsed.itemId, `f_${fileId}`);
+            const streamId = `${parsed.libraryId}:${parsed.itemId}:${fileId}`;
+
+            // Titel: Bevorzuge Kapitel-Titel (falls vorhanden), Metadaten-Titel oder Dateinamen
+            const chTitle = chapters[idx]?.title;
+            const metaTitle = af.metaTags?.tagTitle;
+            const filename = af.metadata?.filename ? af.metadata.filename.replace(/\.[^/.]+$/, '') : `Teil ${idx + 1}`;
+            const title = chTitle || metaTitle || filename;
+
+            tracks.push({
+              id: trackId,
+              title,
+              durationSec: Math.round(af.duration || 0),
+              startOffsetSec: 0,
+              streamUrl: `/media/stream/abs:${streamId}`
+            });
+          });
+        } else if (chapters.length > 0) {
+          // Einzeldatei-Hörbuch mit mehreren Kapiteln
           const primaryFileId = audioFiles[0]?.ino || audioFiles[0]?.id || 'audio';
           chapters.forEach((ch, idx) => {
             const start = Math.round(ch.start || 0);
@@ -336,20 +358,20 @@ export class AudiobookshelfProvider implements ContentProvider {
               streamUrl: `/media/stream/abs:${streamId}`
             });
           });
-        } else if (audioFiles.length > 0) {
-          audioFiles.forEach((af, idx) => {
-            const fileId = af.ino || af.id || `${idx}`;
-            const trackId = this.makeTrackId(parsed.libraryId, parsed.itemId, `f_${fileId}`);
-            const streamId = `${parsed.libraryId}:${parsed.itemId}:${fileId}`;
-            const filename = af.metadata?.filename ? af.metadata.filename.replace(/\.[^/.]+$/, '') : `Teil ${idx + 1}`;
+        } else if (audioFiles.length === 1) {
+          // Einzeldatei ohne Kapitel
+          const af = audioFiles[0];
+          const fileId = af.ino || af.id || '0';
+          const trackId = this.makeTrackId(parsed.libraryId, parsed.itemId, `f_${fileId}`);
+          const streamId = `${parsed.libraryId}:${parsed.itemId}:${fileId}`;
+          const title = item.media?.metadata?.title || item.title || 'Hörbuch';
 
-            tracks.push({
-              id: trackId,
-              title: filename,
-              durationSec: Math.round(af.duration || 0),
-              startOffsetSec: 0,
-              streamUrl: `/media/stream/abs:${streamId}`
-            });
+          tracks.push({
+            id: trackId,
+            title,
+            durationSec: Math.round(af.duration || item.media?.duration || 0),
+            startOffsetSec: 0,
+            streamUrl: `/media/stream/abs:${streamId}`
           });
         }
       }
