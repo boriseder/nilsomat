@@ -114,18 +114,35 @@ export class CoverService {
     }
 
     // Mit sharp skalieren und formatieren
-    let pipeline = sharp(original).resize(options.width, null, {
-      withoutEnlargement: true,
-      fit: 'inside'
-    });
+    let outputBuffer: Buffer;
+    try {
+      let pipeline = sharp(original).resize(options.width, null, {
+        withoutEnlargement: true,
+        fit: 'inside'
+      });
 
-    if (options.format === 'webp') {
-      pipeline = pipeline.webp({ quality: 82 });
-    } else {
-      pipeline = pipeline.jpeg({ quality: 85, progressive: true });
+      if (options.format === 'webp') {
+        pipeline = pipeline.webp({ quality: 82 });
+      } else {
+        pipeline = pipeline.jpeg({ quality: 85, progressive: true });
+      }
+
+      outputBuffer = await pipeline.toBuffer();
+    } catch {
+      // Bei defektem/unlesbarem Original: Fallback auf Platzhalter
+      const placeholder = this.generatePlaceholderSvg(id, options.section, options.title);
+      let fallbackPipeline = sharp(placeholder).resize(options.width, null, {
+        withoutEnlargement: true,
+        fit: 'inside'
+      });
+      if (options.format === 'webp') {
+        fallbackPipeline = fallbackPipeline.webp({ quality: 82 });
+      } else {
+        fallbackPipeline = fallbackPipeline.jpeg({ quality: 85, progressive: true });
+      }
+      outputBuffer = await fallbackPipeline.toBuffer();
     }
 
-    const outputBuffer = await pipeline.toBuffer();
     const etag = `"${crypto.createHash('md5').update(outputBuffer).digest('hex')}"`;
 
     // In Cache speichern und bereinigen

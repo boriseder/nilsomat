@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
-import { getABSProvider } from '../providers/index.js';
+import { getABSProvider, getNavidromeProvider } from '../providers/index.js';
+import type { Section } from '../providers/types.js';
 import { coverService, isAllowedCoverWidth } from '../services/cover.js';
 
 export const mediaRoutes = new Hono();
@@ -22,23 +23,35 @@ mediaRoutes.get('/cover/:id', async (c) => {
   const forceJpg = f === 'jpg';
   const format: 'webp' | 'jpeg' = !forceJpg && accept.includes('image/webp') ? 'webp' : 'jpeg';
 
-  const absProvider = getABSProvider();
-  const parsed = absProvider.parseId(id);
+  let fetchOriginal: () => Promise<Buffer | null> = async () => null;
+  let section: Section | undefined = undefined;
 
-  // Original-Abruf-Funktion
-  const fetchOriginal = async (): Promise<Buffer | null> => {
+  if (id.startsWith('abs:')) {
+    const absProvider = getABSProvider();
+    const parsed = absProvider.parseId(id);
     if (parsed) {
-      return absProvider.fetchCoverOriginal(parsed.itemId);
+      fetchOriginal = async () => absProvider.fetchCoverOriginal(parsed.itemId);
+      section = 'books';
     }
-    return null;
-  };
+  } else if (id.startsWith('nd:')) {
+    const ndProvider = getNavidromeProvider();
+    const parsed = ndProvider.parseId(id);
+    if (parsed) {
+      // In Navidrome kann v die coverArtId sein oder die Item-ID
+      const coverArtId = v && v !== '1' ? v : parsed.id;
+      fetchOriginal = async () => ndProvider.fetchCoverOriginal(coverArtId);
+      section = 'music';
+    }
+  } else {
+    return c.text('Ungültige Medien-ID', 400);
+  }
 
   try {
     const result = await coverService.getCover(id, fetchOriginal, {
       width,
       format,
       version: v,
-      section: parsed?.libraryId ? 'books' : undefined
+      section
     });
 
     // ETag-Prüfung für 304 Not Modified
@@ -75,17 +88,27 @@ mediaRoutes.get('/cover/:id', async (c) => {
 // /media/stream/<id>
 mediaRoutes.get('/stream/:id', async (c) => {
   const id = c.req.param('id');
-  const absProvider = getABSProvider();
-  const parsed = absProvider.parseId(id);
-
-  if (!parsed || !parsed.partId) {
-    return c.text('Ungültige Audio-ID', 400);
-  }
-
   const rangeHeader = c.req.header('Range');
+  let upstreamRes: Response | null = null;
 
   try {
-    const upstreamRes = await absProvider.streamAudio(parsed.itemId, parsed.partId, rangeHeader);
+    if (id.startsWith('abs:')) {
+      const absProvider = getABSProvider();
+      const parsed = absProvider.parseId(id);
+      if (!parsed || !parsed.partId) {
+        return c.text('Ungültige Audio-ID', 400);
+      }
+      upstreamRes = await absProvider.streamAudio(parsed.itemId, parsed.partId, rangeHeader);
+    } else if (id.startsWith('nd:')) {
+      const ndProvider = getNavidromeProvider();
+      const parsed = ndProvider.parseId(id);
+      if (!parsed || parsed.kind !== 'track') {
+        return c.text('Ungültige Audio-ID', 400);
+      }
+      upstreamRes = await ndProvider.streamAudio(parsed.id, rangeHeader);
+    } else {
+      return c.text('Ungültige Audio-ID', 400);
+    }
 
     const headers = new Headers();
     headers.set('Accept-Ranges', 'bytes');
