@@ -31,6 +31,63 @@ test.describe('Hörbox PWA-Shell auf iPad WebKit', () => {
     expect(box!.height).toBeGreaterThanOrEqual(72);
   });
 
+  test('Navigation ins Cover-Raster und Mindestgröße der Kacheln >= 300px (Abschnitt 5b)', async ({ page }) => {
+    // API mocken mit Beispieldaten
+    await page.route('/api/kid/items?section=books', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: [
+            {
+              id: 'abs:lib1:book1',
+              section: 'books',
+              kind: 'audiobook',
+              title: 'Die kleinen Abenteurer',
+              coverUrl: '/media/cover/abs:lib1:book1?w=640'
+            },
+            {
+              id: 'abs:lib1:book2',
+              section: 'books',
+              kind: 'audiobook',
+              title: 'Geschichten aus dem Zauberwald',
+              coverUrl: '/media/cover/abs:lib1:book2?w=640'
+            }
+          ]
+        })
+      });
+    });
+
+    await page.goto('/');
+
+    // Klick auf Hörbücher
+    const booksTile = page.locator('.tile-books');
+    await booksTile.click();
+
+    // Zurück-Button und Überschrift sichtbar
+    const backBtn = page.locator('.btn-back');
+    await expect(backBtn).toBeVisible();
+    await expect(backBtn).toContainText('Zurück');
+
+    // Touch-Größe des Zurück-Buttons >= 72px
+    const backBox = await backBtn.boundingBox();
+    expect(backBox).not.toBeNull();
+    expect(backBox!.height).toBeGreaterThanOrEqual(72);
+
+    // Kacheln im Raster prüfen
+    const cards = page.locator('.item-card');
+    await expect(cards).toHaveCount(2);
+
+    // Pflicht-Check aus Abschnitt 5b: boundingBox jeder Raster-Kachel >= 300 CSS-px
+    const cardBox = await cards.first().boundingBox();
+    expect(cardBox).not.toBeNull();
+    expect(cardBox!.width).toBeGreaterThanOrEqual(300);
+
+    // Zurück zur Startseite
+    await backBtn.click();
+    await expect(booksTile).toBeVisible();
+  });
+
   test('Versteckter Elternbereich-Einstieg per Long-Press auf Logo', async ({ page }) => {
     await page.goto('/');
 
