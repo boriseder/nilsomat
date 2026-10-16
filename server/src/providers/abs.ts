@@ -78,7 +78,7 @@ export class AudiobookshelfProvider implements ContentProvider {
     if (section === 'books') {
       try {
         // 1. Versuche Serien aus der Hörbücher-Bibliothek zu laden (wie in ABS)
-        const seriesUrl = `${this.config.baseUrl}/api/libraries/${libraryId}/series?limit=100`;
+        const seriesUrl = `${this.config.baseUrl}/api/libraries/${libraryId}/series?include=books&limit=200`;
         const seriesRes = await this.fetchFn(seriesUrl, { headers: this.authHeaders });
         let seriesList: any[] = [];
         if (seriesRes.ok) {
@@ -87,7 +87,7 @@ export class AudiobookshelfProvider implements ContentProvider {
         }
 
         // 2. Alle Bücher abrufen
-        const itemsUrl = `${this.config.baseUrl}/api/libraries/${libraryId}/items?sort=media.metadata.title&limit=1000`;
+        const itemsUrl = `${this.config.baseUrl}/api/libraries/${libraryId}/items?sort=media.metadata.title&limit=2000`;
         const itemsRes = await this.fetchFn(itemsUrl, { headers: this.authHeaders });
         let allBooks: any[] = [];
         if (itemsRes.ok) {
@@ -101,14 +101,28 @@ export class AudiobookshelfProvider implements ContentProvider {
           const booksInSeriesIds = new Set<string>();
 
           for (const s of seriesList) {
-            const seriesBooks: any[] = s.books || [];
+            let seriesBooks: any[] = s.books || [];
+
+            // Falls s.books im ABS-Aufruf nicht enthalten oder leer war, suche passende Bücher in allBooks
+            if (seriesBooks.length === 0 && allBooks.length > 0) {
+              seriesBooks = allBooks.filter((b) => {
+                const bSeries = b.media?.metadata?.series || b.series || [];
+                return bSeries.some(
+                  (ser: any) =>
+                    ser.id === s.id ||
+                    (ser.name && s.name && ser.name.toLowerCase() === s.name.toLowerCase())
+                );
+              });
+            }
+
             seriesBooks.forEach((b) => booksInSeriesIds.add(b.id));
 
             // Erstes Buch als Cover der Serie verwenden
             const firstBook = seriesBooks[0];
             const coverItemId = firstBook ? firstBook.id : s.id;
-            const updatedAt = firstBook?.updatedAt || 1;
+            const updatedAt = firstBook?.updatedAt || s.updatedAt || 1;
             const coverUrl = `/media/cover/${this.makeItemId(libraryId!, coverItemId)}?w=640&v=${updatedAt}`;
+            const count = s.numBooks || seriesBooks.length || undefined;
 
             items.push({
               id: this.makeItemId(libraryId!, `series_${s.id}`),
@@ -116,8 +130,16 @@ export class AudiobookshelfProvider implements ContentProvider {
               kind: 'series',
               title: s.name || 'Serie',
               coverUrl,
-              bookCount: s.numBooks || seriesBooks.length || undefined
+              bookCount: count
             });
+          }
+
+          // Auch Bücher erfassen, die in allBooks eine Serie haben, aber deren Serie vielleicht nicht in seriesList war
+          for (const b of allBooks) {
+            const bSeries = b.media?.metadata?.series || b.series || [];
+            if (bSeries.length > 0) {
+              booksInSeriesIds.add(b.id);
+            }
           }
 
           // Eigenständige Hörbücher hinzufügen, die keiner Serie angehören
@@ -202,18 +224,58 @@ export class AudiobookshelfProvider implements ContentProvider {
     const libraryId = parsed.libraryId;
 
     try {
+      // 1. Versuche die Serie mit Büchern zu laden
+      let books: any[] = [];
+      let seriesName = '';
+
       const res = await this.fetchFn(
-        `${this.config.baseUrl}/api/libraries/${libraryId}/series?limit=100`,
+        `${this.config.baseUrl}/api/libraries/${libraryId}/series?include=books&limit=200`,
         { headers: this.authHeaders }
       );
-      if (!res.ok) return [];
+      if (res.ok) {
+        const data = await res.json();
+        const seriesList: any[] = data.results || [];
+        const series = seriesList.find((s) => s.id === cleanSeriesId);
+        if (series) {
+          seriesName = series.name || '';
+          books = series.books || [];
+        }
+      }
 
-      const data = await res.json();
-      const seriesList: any[] = data.results || [];
-      const series = seriesList.find((s) => s.id === cleanSeriesId);
-      if (!series) return [];
+      // 2. Falls keine Bücher im Series-Endpoint enthalten waren: Versuche dedizierten Endpunkt
+      if (books.length === 0) {
+        const directRes = await this.fetchFn(
+          `${this.config.baseUrl}/api/libraries/${libraryId}/series/${cleanSeriesId}`,
+          { headers: this.authHeaders }
+        );
+        if (directRes.ok) {
+          const directData = await directRes.json();
+          seriesName = directData.name || seriesName;
+          books = directData.books || [];
+        }
+      }
 
-      const books: any[] = series.books || [];
+      // 3. Fallback: Lade alle Bücher der Bibliothek und filtere nach der Serie
+      if (books.length === 0) {
+        const itemsRes = await this.fetchFn(
+          `${this.config.baseUrl}/api/libraries/${libraryId}/items?limit=2000`,
+          { headers: this.authHeaders }
+        );
+        if (itemsRes.ok) {
+          const itemsData = await itemsRes.json();
+          const allItems = itemsData.results || [];
+          books = allItems.filter((b: any) => {
+            const bSeries = b.media?.metadata?.series || b.series || [];
+            return bSeries.some(
+              (s: any) =>
+                s.id === cleanSeriesId ||
+                (seriesName && s.name && s.name.toLowerCase() === seriesName.toLowerCase())
+            );
+          });
+        }
+      }
+
+      if (books.length === 0) return [];
 
       // Sortiere Bücher nach Serien-Sequenz (Folge 1, 2, 3...)
       books.sort((a, b) => {
@@ -240,13 +302,20 @@ export class AudiobookshelfProvider implements ContentProvider {
         const updatedAt = book.updatedAt || 1;
         const coverUrl = `/media/cover/${id}?w=640&v=${updatedAt}`;
 
+        const seriesObj =
+          book.media?.metadata?.series?.find((s: any) => s.id === cleanSeriesId) ||
+          book.series?.find((s: any) => s.id === cleanSeriesId) ||
+          book.media?.metadata?.series?.[0];
+        const sequence = seriesObj?.sequence ? String(seriesObj.sequence) : undefined;
+
         return {
           id,
           section: 'books',
           kind: 'audiobook',
           title,
           coverUrl,
-          durationSec
+          durationSec,
+          sequence
         };
       });
     } catch {

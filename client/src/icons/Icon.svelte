@@ -14,7 +14,9 @@
       | 'check'
       | 'reload'
       | 'close'
-      | 'sparkle';
+      | 'sparkle'
+      | 'grid'
+      | 'list';
     size?: number;
     color?: string;
   }
@@ -175,6 +177,20 @@
       d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"
       fill="currentColor"
     />
+  {:else if name === 'grid'}
+    <!-- Modern 2x2 grid icon -->
+    <rect x="3" y="3" width="7.5" height="7.5" rx="2.5" fill="currentColor" />
+    <rect x="13.5" y="3" width="7.5" height="7.5" rx="2.5" fill="currentColor" />
+    <rect x="3" y="13.5" width="7.5" height="7.5" rx="2.5" fill="currentColor" />
+    <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2.5" fill="currentColor" />
+  {:else if name === 'list'}
+    <!-- Modern 3-line list icon -->
+    <rect x="3" y="4.5" width="4" height="3.5" rx="1.75" fill="currentColor" />
+    <rect x="9.5" y="4.5" width="11.5" height="3.5" rx="1.75" fill="currentColor" />
+    <rect x="3" y="10.25" width="4" height="3.5" rx="1.75" fill="currentColor" />
+    <rect x="9.5" y="10.25" width="11.5" height="3.5" rx="1.75" fill="currentColor" />
+    <rect x="3" y="16" width="4" height="3.5" rx="1.75" fill="currentColor" />
+    <rect x="9.5" y="16" width="11.5" height="3.5" rx="1.75" fill="currentColor" />
   {/if}
 </svg>
 

@@ -17,6 +17,7 @@ export interface Item {
   progress?: ItemProgress;
   dominantColor?: string;
   bookCount?: number;
+  sequence?: string;
 }
 
 export interface Track {

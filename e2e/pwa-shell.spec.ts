@@ -31,8 +31,8 @@ test.describe('Hörbox PWA-Shell auf iPad WebKit', () => {
     expect(box!.height).toBeGreaterThanOrEqual(72);
   });
 
-  test('Navigation ins Cover-Raster und Mindestgröße der Kacheln >= 300px (Abschnitt 5b)', async ({ page }) => {
-    // API mocken mit Beispieldaten
+  test('Navigation ins Cover-Raster, Serien-Indikator, Listenumschaltung und Mindestgröße der Kacheln >= 300px (Abschnitt 5b)', async ({ page }) => {
+    // API mocken mit Beispieldaten: Eine Serie und ein einzelnes Hörbuch
     await page.route('/api/kid/items?section=books', async (route) => {
       await route.fulfill({
         status: 200,
@@ -40,10 +40,11 @@ test.describe('Hörbox PWA-Shell auf iPad WebKit', () => {
         body: JSON.stringify({
           items: [
             {
-              id: 'abs:lib1:book1',
+              id: 'abs:lib1:series1',
               section: 'books',
-              kind: 'audiobook',
-              title: 'Die kleinen Abenteurer',
+              kind: 'series',
+              title: 'Pumuckl',
+              bookCount: 14,
               coverUrl: '/media/cover/abs:lib1:book1?w=640'
             },
             {
@@ -78,10 +79,38 @@ test.describe('Hörbox PWA-Shell auf iPad WebKit', () => {
     const cards = page.locator('.item-card');
     await expect(cards).toHaveCount(2);
 
+    // Serien-Indikator prüfen
+    const seriesBadge = page.locator('.series-badge');
+    await expect(seriesBadge).toBeVisible();
+    await expect(seriesBadge).toContainText('14 Folgen');
+
+    const seriesPill = page.locator('.pill-series');
+    await expect(seriesPill).toBeVisible();
+    await expect(seriesPill).toContainText('Serie');
+
+    // Einzelnes Hörbuch Pill prüfen
+    const bookPill = page.locator('.pill-audiobook');
+    await expect(bookPill).toBeVisible();
+    await expect(bookPill).toContainText('Hörbuch');
+
     // Pflicht-Check aus Abschnitt 5b: boundingBox jeder Raster-Kachel >= 300 CSS-px
     const cardBox = await cards.first().boundingBox();
     expect(cardBox).not.toBeNull();
     expect(cardBox!.width).toBeGreaterThanOrEqual(300);
+
+    // Auf Listendarstellung umschalten
+    const listToggleBtn = page.locator('.btn-toggle-view').filter({ hasText: 'Liste' });
+    await expect(listToggleBtn).toBeVisible();
+    await listToggleBtn.click();
+
+    // Listen-Zeilen sichtbar
+    const listRows = page.locator('.item-list-row');
+    await expect(listRows).toHaveCount(2);
+
+    // Wieder zurück auf Kacheln schalten
+    const gridToggleBtn = page.locator('.btn-toggle-view').filter({ hasText: 'Kacheln' });
+    await gridToggleBtn.click();
+    await expect(cards).toHaveCount(2);
 
     // Zurück zur Startseite
     await backBtn.click();

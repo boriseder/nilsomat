@@ -17,6 +17,7 @@ export interface Item {
   progress?: ItemProgress;
   dominantColor?: string; // Hex, vom BFF berechnet (Abschnitt 5b)
   bookCount?: number;    // Anzahl der Bücher bei Serien
+  sequence?: string;     // Sequenz/Folgennummer innerhalb einer Serie
 }
 
 export interface Track {        // spielbare Einheit (Kapitel, Episode, Lied)

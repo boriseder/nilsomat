@@ -31,6 +31,16 @@ export const strings = {
     error: {
       general: 'Gerade geht es nicht. Sag Mama oder Papa Bescheid.',
       streamFailed: 'Das Abspielen klappt gerade nicht. Sag Mama oder Papa Bescheid.'
+    },
+    views: {
+      grid: 'Kacheln',
+      list: 'Liste'
+    },
+    types: {
+      series: 'Serie',
+      episode: 'Folge',
+      episodes: 'Folgen',
+      audiobook: 'Hörbuch'
     }
   },
   parent: {
