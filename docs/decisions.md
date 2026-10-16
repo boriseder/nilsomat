@@ -31,8 +31,8 @@ Dieses Dokument erfasst alle maßgeblichen technischen Entscheidungen, Begründu
 ## 3. Datenbank & Zustand: better-sqlite3
 
 - **Entscheidung:** `better-sqlite3` zur lokalen Speicherung in `/data/config.sqlite`.
-- **Datum:** Meilenstein 0
-- **Zweck:** Speicherung von verschlüsselten Verbindungsdaten (ABS, Navidrome), Eltern-PIN (Hash), Bibliothekszuordnung, Whitelist/Blacklist von Titeln.
+- **Datum:** Meilenstein 0 / Meilenstein 5
+- **Zweck:** Speicherung von verschlüsselten Verbindungsdaten (ABS, Navidrome), Eltern-PIN (Hash), Bibliothekszuordnung, Whitelist/Blacklist von Titeln, Session-Verwaltung, Status-Logs und täglicher Nutzungsdauer.
 - **Alternativen:** sqlite3 (asynchron, C++ Bindings veraltet), reines JSON-File (keine Transaktionssicherheit).
 - **Begründung:** In `AGENTS.md` ausdrücklich vorgegeben; synchron, schnell, transaktionssicher und wartungsarm.
 
@@ -68,3 +68,25 @@ Dieses Dokument erfasst alle maßgeblichen technischen Entscheidungen, Begründu
   - Playback-Sessions auf dem ABS-Server verfallen nach Inaktivität und führen bei verspätetem Sync zu 404-Fehlern.
   - Das Speichern alle 10 s sowie bei `pause`, `pagehide` und `visibilitychange` (via `fetch` mit `keepalive`) funktioniert mit dem zustandslosen Endpunkt ohne Session-Lifecycle-Overhead zuverlässig.
 
+---
+
+## 7. Verschlüsselung & Sicherheit: AES-256-GCM mit APP_SECRET
+
+- **Entscheidung:** AES-256-GCM Verschlüsselung für gespeicherte Zugangsdaten (ABS-Token, Navidrome-Passwort) in der SQLite-Datenbank.
+- **Datum:** Meilenstein 5
+- **Zweck:** Schutz sensibler Tokens und Passwörter auf dem Datenträger.
+- **Begründung:**
+  - Schlüsselableitung erfolgt mittels `crypto.scryptSync` aus der Pflicht-Umgebungsvariable `APP_SECRET`.
+  - Jeder verschlüsselte Wert erhält einen individuellen, zufälligen 12-Byte-IV und ein Authentifizierungs-Tag.
+  - Niemals werden Secrets an den Client zurückgegeben (nur boolean Status `hasAbsToken`, `hasNavidromePassword`).
+
+---
+
+## 8. Service Worker & Caching-Strategie
+
+- **Entscheidung:** VitePWA mit Workbox Runtime Caching (`CacheFirst` für Cover, `NetworkOnly` für Audio-Streams).
+- **Datum:** Meilenstein 6
+- **Zweck:** Schnelles Laden und Vermeidung wiederholter Bildabrufe bei Einhaltung der iOS Safari Speichergrenzen.
+- **Begründung:**
+  - Cover-Bilder ändern sich selten und werden mit `Cache-Control: public, max-age=31536000, immutable` und ETag ausgeliefert.
+  - Audio-Dateien dürfen wegen iOS Speicherobergrenzen nicht gecacht werden und erfordern vollen HTTP-Range-Support.
