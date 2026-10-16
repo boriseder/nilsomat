@@ -1,0 +1,95 @@
+:root {
+  /* Farbpalette (hoher Kontrast, WCAG AA konform) */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e1b4b;
+  --bg-surface: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --accent-books: #f59e0b;
+  --accent-podcasts: #8b5cf6;
+  --accent-music: #ec4899;
+  --accent-action: #3b82f6;
+  --accent-play: #10b981;
+  --accent-danger: #ef4444;
+
+  /* Typografie (Schrift mind. 22px im Kinderbereich) */
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-base: 22px;
+  --font-size-lg: 28px;
+  --font-size-xl: 36px;
+  --font-size-title: 48px;
+
+  /* Mindestabmessungen für Touch-Elemente (mind. 72x72px) */
+  --touch-min-size: 72px;
+  --touch-spacing: 16px;
+  --player-btn-size: 120px;
+
+  /* Cover-Größen (Abschnitt 5b) */
+  --cover-min-size: 300px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
+/* Kinderbereich: keine Textauswahl, kein Callout */
+.kid-area {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tippbare Elemente: Mindestens 72x72px */
+button, .touch-target {
+  min-width: var(--touch-min-size);
+  min-height: var(--touch-min-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: none;
+  border-radius: 20px;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+button:active, .touch-target:active {
+  transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

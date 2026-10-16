@@ -1,0 +1,46 @@
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { defineConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
+
+export default defineConfig({
+  plugins: [
+    svelte(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: 'auto',
+      manifest: {
+        name: 'Hörbox',
+        short_name: 'Hörbox',
+        description: 'Kinder-Audio-App für Hörbücher, Podcasts und Musik',
+        theme_color: '#1e1b4b',
+        background_color: '#0f172a',
+        display: 'standalone',
+        orientation: 'any',
+        icons: [
+          {
+            src: '/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          }
+        ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}']
+      }
+    })
+  ],
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': 'http://localhost:8080',
+      '/media': 'http://localhost:8080',
+      '/healthz': 'http://localhost:8080'
+    }
+  }
+});
