@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.output/
+*.log
+.DS_Store
+data/
+coverage/
+playwright-report/
+test-results/
+.svelte-kit/

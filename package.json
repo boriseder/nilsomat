@@ -1,0 +1,25 @@
+{
+  "name": "hoerbox-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter client build && pnpm --filter server build",
+    "dev": "pnpm --parallel --filter client --filter server dev",
+    "lint": "pnpm --recursive run lint",
+    "typecheck": "pnpm --recursive run typecheck",
+    "test": "vitest run",
+    "test:e2e": "pnpm --filter e2e test"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.7"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild",
+      "sharp"
+    ]
+  }
+}

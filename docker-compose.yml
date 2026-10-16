@@ -1,0 +1,27 @@
+services:
+  hoerbox:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hoerbox:latest
+    container_name: hoerbox
+    restart: unless-stopped
+    read_only: true
+    user: "node"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    volumes:
+      - ./data:/data
+    networks:
+      - proxy
+    environment:
+      - APP_SECRET=${APP_SECRET:?APP_SECRET is required}
+      - TRUSTED_PROXY=true
+      - TZ=Europe/Berlin
+      - PORT=8080
+      - COVER_CACHE_MAX_MB=2048
+      - NODE_ENV=production
+
+networks:
+  proxy:
+    external: true
