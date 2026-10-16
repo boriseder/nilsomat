@@ -2,6 +2,30 @@ import { AudiobookshelfProvider, type ABSConfig } from './abs.js';
 import { NavidromeProvider, type NavidromeConfig } from './navidrome.js';
 import type { ContentProvider, Section } from './types.js';
 
+import { getDB } from '../db.js';
+
+export function reloadProvidersFromDB(): void {
+  try {
+    const db = getDB();
+    const config = db.getConfig();
+
+    absProvider = new AudiobookshelfProvider({
+      baseUrl: config.absUrl || process.env.ABS_URL || 'http://localhost:13378',
+      token: config.absToken || process.env.ABS_TOKEN || '',
+      booksLibraryId: config.absBooksLibId || process.env.ABS_BOOKS_LIB_ID || '',
+      podcastsLibraryId: config.absPodcastsLibId || process.env.ABS_PODCASTS_LIB_ID || ''
+    });
+
+    navidromeProvider = new NavidromeProvider({
+      baseUrl: config.navidromeUrl || process.env.NAVIDROME_URL || 'http://localhost:4533',
+      user: config.navidromeUser || process.env.NAVIDROME_USER || '',
+      password: config.navidromePassword || process.env.NAVIDROME_PASSWORD || ''
+    });
+  } catch {
+    // Falls DB noch nicht initialisiert ist
+  }
+}
+
 let absProvider = new AudiobookshelfProvider({
   baseUrl: process.env.ABS_URL || 'http://localhost:13378',
   token: process.env.ABS_TOKEN || '',
@@ -14,6 +38,9 @@ let navidromeProvider = new NavidromeProvider({
   user: process.env.NAVIDROME_USER || '',
   password: process.env.NAVIDROME_PASSWORD || ''
 });
+
+// Direkt beim Laden versuchen aus DB zu laden
+reloadProvidersFromDB();
 
 export function setABSProvider(provider: AudiobookshelfProvider): void {
   absProvider = provider;

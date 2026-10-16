@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Item, Section, Track } from './types';
+  import DailyLimitView from './kid/DailyLimitView.svelte';
   import EpisodeList from './kid/EpisodeList.svelte';
   import ErrorView from './kid/ErrorView.svelte';
   import ItemGrid from './kid/ItemGrid.svelte';
@@ -22,16 +23,33 @@
   let hasError = $state(false);
   let showParent = $state(false);
   let showFullscreenPlayer = $state(false);
+  let dailyLimitReached = $state(false);
+  let isConfigured = $state(true);
 
   let playerState = $state<PlayerState>(audioEngine.getState());
 
   onMount(() => {
+    checkKidStatus();
     loadSections();
     const unsubscribe = audioEngine.subscribe((state) => {
       playerState = state;
     });
     return unsubscribe;
   });
+
+  async function checkKidStatus(): Promise<void> {
+    try {
+      const res = await fetch('/api/kid/status');
+      if (res.ok) {
+        const data = await res.json();
+        isConfigured = data.configured;
+        dailyLimitReached = data.dailyLimitReached;
+        if (!isConfigured) {
+          showParent = true;
+        }
+      }
+    } catch {}
+  }
 
   function handleInteraction(): void {
     audioEngine.init();
@@ -140,6 +158,8 @@
 
   function handleCloseParent(): void {
     showParent = false;
+    checkKidStatus();
+    loadSections();
   }
 </script>
 
@@ -149,7 +169,9 @@
   onclick={handleInteraction}
   onkeydown={handleInteraction}
 >
-  {#if hasError}
+  {#if dailyLimitReached}
+    <DailyLimitView onParentTrigger={handleParentTrigger} />
+  {:else if hasError}
     <ErrorView
       onBack={currentView !== 'home' ? handleBackToHome : undefined}
       onRetry={() => {
