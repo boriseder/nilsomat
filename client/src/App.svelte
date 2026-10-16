@@ -7,7 +7,9 @@
   import KidHome from './kid/KidHome.svelte';
   import LoadingView from './kid/LoadingView.svelte';
   import ParentSettings from './parent/ParentSettings.svelte';
-  import { audioEngine } from './player/AudioEngine';
+  import { audioEngine, type PlayerState } from './player/AudioEngine';
+  import FullscreenPlayer from './player/FullscreenPlayer.svelte';
+  import MiniPlayer from './player/MiniPlayer.svelte';
 
   let currentView = $state<'home' | 'grid' | 'episodes'>('home');
   let selectedSection = $state<Section | null>(null);
@@ -19,6 +21,17 @@
   let loading = $state(false);
   let hasError = $state(false);
   let showParent = $state(false);
+  let showFullscreenPlayer = $state(false);
+
+  let playerState = $state<PlayerState>(audioEngine.getState());
+
+  onMount(() => {
+    loadSections();
+    const unsubscribe = audioEngine.subscribe((state) => {
+      playerState = state;
+    });
+    return unsubscribe;
+  });
 
   function handleInteraction(): void {
     audioEngine.init();
@@ -37,10 +50,6 @@
       // Behalte Standard-Sektionen
     }
   }
-
-  onMount(() => {
-    loadSections();
-  });
 
   async function handleSelectSection(sec: Section): Promise<void> {
     handleInteraction();
@@ -79,7 +88,34 @@
         loading = false;
         hasError = true;
       }
+    } else {
+      // Hörbuch oder Album/Playlist: Tracks laden und abspielen
+      loading = true;
+      hasError = false;
+      try {
+        const res = await fetch(`/api/kid/tracks/${encodeURIComponent(item.id)}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const itemTracks: Track[] = data.tracks || [];
+        loading = false;
+
+        if (itemTracks.length > 0) {
+          const startOffset = item.progress?.positionSec || 0;
+          await audioEngine.playItem(item, itemTracks, 0, startOffset);
+          showFullscreenPlayer = true;
+        }
+      } catch {
+        loading = false;
+        hasError = true;
+      }
     }
+  }
+
+  async function handlePlayTrack(track: Track, allTracks: Track[]): Promise<void> {
+    if (!selectedItem) return;
+    const index = allTracks.findIndex((t) => t.id === track.id);
+    await audioEngine.playItem(selectedItem, allTracks, Math.max(0, index));
+    showFullscreenPlayer = true;
   }
 
   function handleBackToHome(): void {
@@ -146,7 +182,30 @@
       podcast={selectedItem}
       {tracks}
       onBack={handleBackToGrid}
-      onPlayTrack={(track) => console.log('Play episode:', track.title)}
+      onPlayTrack={handlePlayTrack}
+    />
+  {/if}
+
+  <!-- Mini-Player: Erscheint, wenn ein Track geladen ist und der Vollbild-Player geschlossen ist -->
+  {#if !showFullscreenPlayer && playerState.currentItem && playerState.currentTrack}
+    <MiniPlayer
+      item={playerState.currentItem}
+      track={playerState.currentTrack}
+      isPlaying={playerState.isPlaying}
+      onOpenFullscreen={() => (showFullscreenPlayer = true)}
+    />
+  {/if}
+
+  <!-- Vollbild-Player -->
+  {#if showFullscreenPlayer && playerState.currentItem && playerState.currentTrack}
+    <FullscreenPlayer
+      item={playerState.currentItem}
+      track={playerState.currentTrack}
+      isPlaying={playerState.isPlaying}
+      currentTime={playerState.currentTime}
+      duration={playerState.duration}
+      sleepTimerDuration={playerState.sleepTimerDuration}
+      onClose={() => (showFullscreenPlayer = false)}
     />
   {/if}
 
@@ -163,5 +222,6 @@
     flex-direction: column;
     background-color: var(--bg-primary);
     overflow: hidden;
+    position: relative;
   }
 </style>
