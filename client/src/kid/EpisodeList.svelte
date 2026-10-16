@@ -48,8 +48,8 @@
           class="episode-row"
           onclick={() => onPlayTrack(track, tracks)}
         >
-          <div class="row-play-badge">
-            <Icon name="play" size={24} color="#ffffff" />
+          <div class="episode-index-badge">
+            <span>{index + 1}</span>
           </div>
 
           <div class="row-info">
@@ -57,6 +57,10 @@
             {#if track.durationSec}
               <span class="row-duration">{formatDuration(track.durationSec)}</span>
             {/if}
+          </div>
+
+          <div class="row-play-badge">
+            <Icon name="play" size={26} color="#ffffff" />
           </div>
         </button>
       {/each}
@@ -77,7 +81,7 @@
     align-items: center;
     gap: 24px;
     padding: 24px 32px;
-    background: rgba(15, 23, 42, 0.9);
+    background: rgba(14, 19, 38, 0.92);
     backdrop-filter: blur(16px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     z-index: 10;
@@ -87,27 +91,27 @@
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    background: rgba(30, 41, 59, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(30, 38, 69, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     color: var(--text-primary);
     padding: 0 28px;
     height: var(--touch-min-size);
     border-radius: 9999px;
     font-size: var(--font-size-base);
-    font-weight: 700;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    font-weight: 800;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, border-color 0.15s ease;
     cursor: pointer;
   }
 
   .btn-back:hover {
-    background: rgba(51, 65, 85, 0.95);
-    border-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(-2px);
+    background: rgba(45, 56, 96, 0.95);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-3px) scale(1.02);
   }
 
   .btn-back:active {
-    transform: scale(0.96);
+    transform: scale(0.95);
   }
 
   .podcast-meta {
@@ -119,12 +123,13 @@
   }
 
   .small-cover {
-    width: 64px;
-    height: 64px;
-    border-radius: 16px;
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
     overflow: hidden;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .podcast-title {
@@ -139,21 +144,21 @@
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 28px 32px;
+    padding: 32px 32px 48px 32px;
   }
 
   .episodes-list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 18px;
     max-width: 1000px;
     margin: 0 auto;
   }
 
   .episode-row {
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
+    background: rgba(30, 38, 69, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 28px;
     padding: 16px 24px;
     min-height: var(--touch-min-size);
     display: flex;
@@ -161,51 +166,72 @@
     gap: 20px;
     color: var(--text-primary);
     text-align: left;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     cursor: pointer;
     width: 100%;
-    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, border-color 0.15s ease;
   }
 
   .episode-row:hover {
-    background: rgba(51, 65, 85, 0.9);
-    border-color: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
+    background: rgba(45, 56, 96, 0.88);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-3px) scale(1.01);
   }
 
   .episode-row:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
   }
 
-  .row-play-badge {
-    width: 48px;
-    height: 48px;
+  .episode-index-badge {
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #10b981, #059669);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-secondary);
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
   }
 
   .row-info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
     overflow: hidden;
   }
 
   .row-title {
     font-size: var(--font-size-base);
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.3;
   }
 
   .row-duration {
     font-size: 16px;
-    font-weight: 600;
-    color: var(--text-secondary);
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+
+  .row-play-badge {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+    transition: transform 0.15s ease;
+  }
+
+  .episode-row:hover .row-play-badge {
+    transform: scale(1.08);
   }
 </style>

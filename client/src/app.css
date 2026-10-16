@@ -1,30 +1,41 @@
 :root {
-  /* Farbpalette (hoher Kontrast, WCAG AA konform) */
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e1b4b;
-  --bg-surface: #1e293b;
+  /* Farbpalette (hoher Kontrast, WCAG AA konform, warme freundliche Kindertöne) */
+  --bg-primary: #0b0f1e;
+  --bg-secondary: #171c36;
+  --bg-surface: #1e2645;
+  --bg-surface-glass: rgba(30, 38, 69, 0.85);
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  /* Sektions-Farben */
   --accent-books: #f59e0b;
+  --accent-books-glow: rgba(245, 158, 11, 0.35);
   --accent-podcasts: #8b5cf6;
-  --accent-music: #ec4899;
+  --accent-podcasts-glow: rgba(139, 92, 246, 0.35);
+  --accent-music: #f43f5e;
+  --accent-music-glow: rgba(244, 63, 94, 0.35);
+
+  /* Aktions- & Status-Farben */
   --accent-action: #3b82f6;
   --accent-play: #10b981;
+  --accent-play-glow: rgba(16, 185, 129, 0.45);
   --accent-danger: #ef4444;
 
-  /* Typografie (Schrift mind. 22px im Kinderbereich) */
-  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Typografie (Schrift mind. 22px im Kinderbereich, runde kinderfreundliche Schriftgeometrie) */
+  --font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-sm: 16px;
   --font-size-base: 22px;
   --font-size-lg: 28px;
   --font-size-xl: 36px;
   --font-size-title: 48px;
 
-  /* Mindestabmessungen für Touch-Elemente (mind. 72x72px) */
+  /* Mindestabmessungen für Touch-Elemente (mind. 72x72px, AGENTS.md Abschnitt 5.1) */
   --touch-min-size: 72px;
   --touch-spacing: 16px;
-  --player-btn-size: 120px;
+  --player-btn-size: 126px;
 
-  /* Cover-Größen (Abschnitt 5b) */
+  /* Cover-Größen (mind. 300px im Raster, AGENTS.md Abschnitt 5b) */
   --cover-min-size: 300px;
 }
 
@@ -39,17 +50,20 @@ html, body {
   height: 100%;
   overflow: hidden;
   background-color: var(--bg-primary);
+  background-image: radial-gradient(circle at 50% 8%, #1f254d 0%, #0d1226 55%, #070913 100%);
+  background-attachment: fixed;
   color: var(--text-primary);
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   overscroll-behavior: none;
 }
 
-/* Kinderbereich: keine Textauswahl, kein Callout */
+/* Kinderbereich: keine Textauswahl, kein Callout (AGENTS.md Abschnitt 7) */
 .kid-area {
   user-select: none;
   -webkit-user-select: none;
@@ -64,25 +78,46 @@ html, body {
   flex-direction: column;
 }
 
-/* Tippbare Elemente: Mindestens 72x72px */
+/* Tippbare Elemente: Mindestens 72x72px mit taktiler Feder-Reaktion (2026 Squishy UI) */
 button, .touch-target {
   min-width: var(--touch-min-size);
   min-height: var(--touch-min-size);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
   border: none;
-  border-radius: 20px;
+  border-radius: 9999px;
+  font-family: var(--font-family);
   font-size: var(--font-size-base);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms ease, opacity 120ms ease;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, filter 0.15s ease;
 }
 
 button:active, .touch-target:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
+}
+
+/* Weiche Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 @media (prefers-reduced-motion: reduce) {

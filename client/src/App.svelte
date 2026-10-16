@@ -261,6 +261,8 @@
       item={playerState.currentItem}
       track={playerState.currentTrack}
       isPlaying={playerState.isPlaying}
+      currentTime={playerState.currentTime}
+      duration={playerState.duration}
       onOpenFullscreen={() => (showFullscreenPlayer = true)}
     />
   {/if}
