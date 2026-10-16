@@ -1,0 +1,30 @@
+{
+  "subsonic-response": {
+    "status": "ok",
+    "version": "1.16.1",
+    "type": "navidrome",
+    "serverVersion": "0.54.0",
+    "albumList2": {
+      "album": [
+        {
+          "id": "alb-1",
+          "name": "Bunte Kinderlieder",
+          "artist": "Die Mini-Band",
+          "coverArt": "cov-alb-1",
+          "songCount": 10,
+          "duration": 1800,
+          "created": "2024-03-01T10:00:00Z"
+        },
+        {
+          "id": "alb-2",
+          "name": "Klangreise durch die Natur",
+          "artist": "Waldklang Orchester",
+          "coverArt": "cov-alb-2",
+          "songCount": 8,
+          "duration": 1440,
+          "created": "2024-03-05T14:30:00Z"
+        }
+      ]
+    }
+  }
+}

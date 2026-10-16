@@ -1,0 +1,40 @@
+{
+  "subsonic-response": {
+    "status": "ok",
+    "version": "1.16.1",
+    "album": {
+      "id": "alb-1",
+      "name": "Bunte Kinderlieder",
+      "artist": "Die Mini-Band",
+      "coverArt": "cov-alb-1",
+      "songCount": 2,
+      "duration": 360,
+      "song": [
+        {
+          "id": "song-101",
+          "parent": "alb-1",
+          "title": "Das Sonnenschein-Lied",
+          "artist": "Die Mini-Band",
+          "album": "Bunte Kinderlieder",
+          "track": 1,
+          "duration": 180,
+          "size": 4320000,
+          "contentType": "audio/mpeg",
+          "suffix": "mp3"
+        },
+        {
+          "id": "song-102",
+          "parent": "alb-1",
+          "title": "Der Regentanz",
+          "artist": "Die Mini-Band",
+          "album": "Bunte Kinderlieder",
+          "track": 2,
+          "duration": 180,
+          "size": 4320000,
+          "contentType": "audio/mpeg",
+          "suffix": "mp3"
+        }
+      ]
+    }
+  }
+}

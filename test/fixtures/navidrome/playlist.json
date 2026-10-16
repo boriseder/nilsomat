@@ -1,0 +1,29 @@
+{
+  "subsonic-response": {
+    "status": "ok",
+    "version": "1.16.1",
+    "playlist": {
+      "id": "pl-1",
+      "name": "Lieblingslieder zum Tanzen",
+      "comment": "Für das Kind freigegeben",
+      "owner": "eltern",
+      "public": true,
+      "songCount": 1,
+      "duration": 210,
+      "entry": [
+        {
+          "id": "song-201",
+          "parent": "alb-5",
+          "title": "Der lustige Pinguin",
+          "artist": "Kinderchor",
+          "album": "Tierische Hits",
+          "track": 3,
+          "duration": 210,
+          "size": 5040000,
+          "contentType": "audio/mpeg",
+          "suffix": "mp3"
+        }
+      ]
+    }
+  }
+}
