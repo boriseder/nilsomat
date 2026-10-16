@@ -2,6 +2,7 @@
   import type { Item } from '../types';
   import { strings } from '../strings';
   import CoverImage from './CoverImage.svelte';
+  import Icon from '../icons/Icon.svelte';
 
   interface Props {
     items: Item[];
@@ -18,7 +19,7 @@
 {#if unfinishedItems.length > 0}
   <section class="continue-section">
     <div class="section-heading">
-      <span aria-hidden="true">⏱️</span>
+      <Icon name="sparkle" size={26} color="#fbbf24" />
       <h3>{strings.kid.status.continueListening}</h3>
     </div>
 
@@ -67,7 +68,7 @@
 
   .continue-row {
     display: flex;
-    gap: 20px;
+    gap: 24px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 8px;
@@ -79,18 +80,29 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     width: 180px;
     flex-shrink: 0;
     text-align: left;
     cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .continue-card:hover {
+    transform: translateY(-4px) scale(1.02);
+  }
+
+  .continue-card:active {
+    transform: scale(0.96);
   }
 
   .card-cover {
     width: 180px;
     height: 180px;
-    border-radius: 20px;
+    border-radius: 24px;
     overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .card-title {

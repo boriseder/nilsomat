@@ -2,6 +2,7 @@
   import type { Item, Section } from '../types';
   import { strings } from '../strings';
   import ContinueListening from './ContinueListening.svelte';
+  import Icon from '../icons/Icon.svelte';
 
   interface Props {
     activeSections?: Section[];
@@ -35,7 +36,7 @@
   }
 </script>
 
-<div class="kid-area">
+<div class="kid-area home-view">
   <header class="header">
     <div
       class="logo-area"
@@ -47,7 +48,9 @@
       onpointercancel={cancelHold}
       onpointerleave={cancelHold}
     >
-      <span class="logo-icon" aria-hidden="true">📻</span>
+      <div class="logo-badge">
+        <Icon name="sparkle" size={32} color="#fbbf24" />
+      </div>
       <h1 class="app-title">{strings.kid.appName}</h1>
     </div>
   </header>
@@ -63,7 +66,9 @@
         class="tile tile-books"
         onclick={() => onSelectSection('books')}
       >
-        <span class="tile-icon" aria-hidden="true">📚</span>
+        <div class="tile-icon-box">
+          <Icon name="books" size={68} color="#ffffff" />
+        </div>
         <span class="tile-label">{strings.kid.sections.books}</span>
       </button>
     {/if}
@@ -74,7 +79,9 @@
         class="tile tile-podcasts"
         onclick={() => onSelectSection('podcasts')}
       >
-        <span class="tile-icon" aria-hidden="true">🎙️</span>
+        <div class="tile-icon-box">
+          <Icon name="podcasts" size={68} color="#ffffff" />
+        </div>
         <span class="tile-label">{strings.kid.sections.podcasts}</span>
       </button>
     {/if}
@@ -85,7 +92,9 @@
         class="tile tile-music"
         onclick={() => onSelectSection('music')}
       >
-        <span class="tile-icon" aria-hidden="true">🎵</span>
+        <div class="tile-icon-box">
+          <Icon name="music" size={68} color="#ffffff" />
+        </div>
         <span class="tile-label">{strings.kid.sections.music}</span>
       </button>
     {/if}
@@ -93,11 +102,20 @@
 </div>
 
 <style>
+  .home-view {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .header {
-    padding: 24px 32px;
+    padding: 28px 32px 16px 32px;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
   .logo-area {
@@ -107,16 +125,26 @@
     cursor: default;
     user-select: none;
     -webkit-user-select: none;
+    padding: 8px 20px;
+    border-radius: 9999px;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .logo-icon {
-    font-size: 40px;
+  .logo-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.4));
   }
 
   .app-title {
     font-size: var(--font-size-title);
-    font-weight: 800;
-    color: var(--text-primary);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #ffffff 40%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   .grid-container {
@@ -125,44 +153,66 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 32px;
+    gap: 36px;
     padding: 32px;
     flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
   }
 
   .tile {
-    width: 260px;
-    height: 260px;
-    border-radius: 36px;
+    width: clamp(240px, 24vw, 300px);
+    height: clamp(240px, 24vw, 300px);
+    border-radius: 40px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 20px;
     color: #ffffff;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     min-width: var(--touch-min-size);
     min-height: var(--touch-min-size);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, filter 0.2s ease;
+    cursor: pointer;
+  }
+
+  .tile:hover {
+    transform: translateY(-4px) scale(1.02);
+    filter: brightness(1.06);
+  }
+
+  .tile:active {
+    transform: scale(0.96);
   }
 
   .tile-books {
-    background: linear-gradient(145deg, #d97706, #b45309);
+    background: linear-gradient(145deg, #f59e0b, #d97706 60%, #b45309);
+    box-shadow: 0 16px 36px rgba(217, 119, 6, 0.35), inset 0 2px 0 rgba(255, 255, 255, 0.35);
   }
 
   .tile-podcasts {
-    background: linear-gradient(145deg, #7c3aed, #6d28d9);
+    background: linear-gradient(145deg, #8b5cf6, #7c3aed 60%, #6d28d9);
+    box-shadow: 0 16px 36px rgba(124, 58, 237, 0.35), inset 0 2px 0 rgba(255, 255, 255, 0.35);
   }
 
   .tile-music {
-    background: linear-gradient(145deg, #db2777, #be185d);
+    background: linear-gradient(145deg, #ec4899, #db2777 60%, #be185d);
+    box-shadow: 0 16px 36px rgba(219, 39, 119, 0.35), inset 0 2px 0 rgba(255, 255, 255, 0.35);
   }
 
-  .tile-icon {
-    font-size: 72px;
+  .tile-icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25));
   }
 
   .tile-label {
     font-size: var(--font-size-lg);
-    font-weight: 700;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 </style>

@@ -199,16 +199,21 @@ export class AudiobookshelfProvider implements ContentProvider {
     const parsed = this.parseId(seriesItemId);
     if (!parsed) return [];
     const cleanSeriesId = parsed.itemId.replace(/^series_/, '');
+    const libraryId = parsed.libraryId;
 
     try {
       const res = await this.fetchFn(
-        `${this.config.baseUrl}/api/series/${cleanSeriesId}`,
+        `${this.config.baseUrl}/api/libraries/${libraryId}/series?limit=100`,
         { headers: this.authHeaders }
       );
       if (!res.ok) return [];
 
       const data = await res.json();
-      const books: any[] = data.books || [];
+      const seriesList: any[] = data.results || [];
+      const series = seriesList.find((s) => s.id === cleanSeriesId);
+      if (!series) return [];
+
+      const books: any[] = series.books || [];
 
       // Sortiere Bücher nach Serien-Sequenz (Folge 1, 2, 3...)
       books.sort((a, b) => {

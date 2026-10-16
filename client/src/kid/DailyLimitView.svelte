@@ -1,5 +1,6 @@
 <script lang="ts">
   import { strings } from '../strings';
+  import Icon from '../icons/Icon.svelte';
 
   interface Props {
     onParentTrigger?: () => void;
@@ -35,7 +36,7 @@
     onpointercancel={cancelHold}
     onpointerleave={cancelHold}
   >
-    <span class="moon-icon" aria-hidden="true">🌙</span>
+    <Icon name="moon" size={76} color="#fbbf24" />
   </div>
 
   <h2 class="limit-message">{strings.kid.status.dailyLimitReached}</h2>
@@ -51,7 +52,7 @@
     justify-content: center;
     padding: 32px;
     text-align: center;
-    background-color: var(--bg-primary);
+    background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #0f172a 80%);
   }
 
   .icon-container {
@@ -61,22 +62,20 @@
     width: 160px;
     height: 160px;
     border-radius: 50%;
-    background: rgba(245, 158, 11, 0.1);
+    background: rgba(251, 191, 36, 0.12);
+    border: 1px solid rgba(251, 191, 36, 0.25);
     margin-bottom: 32px;
     cursor: default;
     user-select: none;
     -webkit-user-select: none;
-  }
-
-  .moon-icon {
-    font-size: 80px;
+    box-shadow: 0 0 32px rgba(251, 191, 36, 0.2);
   }
 
   .limit-message {
     font-size: var(--font-size-title);
     font-weight: 800;
     color: var(--text-primary);
-    max-width: 600px;
+    max-width: 650px;
     line-height: 1.4;
   }
 </style>

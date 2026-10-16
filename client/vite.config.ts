@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       manifest: {
-        name: 'Hörbox',
-        short_name: 'Hörbox',
+        name: 'Nilsomat',
+        short_name: 'Nilsomat',
         description: 'Kinder-Audio-App für Hörbücher, Podcasts und Musik',
         theme_color: '#1e1b4b',
         background_color: '#0f172a',

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Item, Track } from '../types';
   import CoverImage from '../kid/CoverImage.svelte';
-  import { strings } from '../strings';
+  import Icon from '../icons/Icon.svelte';
   import { audioEngine } from './AudioEngine';
 
   interface Props {
@@ -42,40 +42,51 @@
   <button
     type="button"
     class="mini-btn-play"
+    aria-label={isPlaying ? 'Pause' : 'Abspielen'}
     onclick={(e) => {
       e.stopPropagation();
       audioEngine.togglePlay();
     }}
   >
-    <span aria-hidden="true">{isPlaying ? '⏸️' : '▶️'}</span>
+    <Icon name={isPlaying ? 'pause' : 'play'} size={32} color="#ffffff" />
   </button>
 </div>
 
 <style>
   .mini-player {
     position: fixed;
-    bottom: env(safe-area-inset-bottom, 16px);
+    bottom: max(16px, env(safe-area-inset-bottom, 16px));
     left: 24px;
     right: 24px;
     height: 96px;
-    background: rgba(30, 41, 59, 0.95);
-    backdrop-filter: blur(16px);
-    border-radius: 28px;
-    padding: 12px 20px;
+    background: rgba(30, 41, 59, 0.92);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 32px;
+    padding: 12px 24px;
     display: flex;
     align-items: center;
     gap: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
     z-index: 150;
     cursor: pointer;
     max-width: 900px;
     margin: 0 auto;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .mini-player:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.24);
   }
 
   .mini-cover {
-    width: 72px;
-    height: 72px;
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
+    overflow: hidden;
     flex-shrink: 0;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
   }
 
   .mini-meta {
@@ -97,6 +108,7 @@
 
   .mini-subtitle {
     font-size: 16px;
+    font-weight: 600;
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -107,14 +119,24 @@
     width: var(--touch-min-size);
     height: var(--touch-min-size);
     border-radius: 50%;
-    background: var(--accent-play);
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     color: #ffffff;
-    font-size: 32px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+    transition: transform 0.15s ease, filter 0.15s ease;
+  }
+
+  .mini-btn-play:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+  }
+
+  .mini-btn-play:active {
+    transform: scale(0.94);
   }
 </style>

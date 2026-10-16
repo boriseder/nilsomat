@@ -98,21 +98,11 @@ describe('Audiobookshelf Provider mit Fixtures (AGENTS.md Abschnitt 4.1)', () =>
                 name: 'Pumuckl',
                 numBooks: 2,
                 books: [
-                  { id: 'book-item-1', updatedAt: 1710000000000 },
-                  { id: 'book-item-2', updatedAt: 1710000000000 }
+                  bookSingleFileFixture,
+                  bookMultiFileFixture
                 ]
               }
             ]
-          }),
-          { status: 200 }
-        );
-      }
-      if (url.includes('/api/series/series-pumuckl')) {
-        return new Response(
-          JSON.stringify({
-            id: 'series-pumuckl',
-            name: 'Pumuckl',
-            books: [bookSingleFileFixture, bookMultiFileFixture]
           }),
           { status: 200 }
         );
