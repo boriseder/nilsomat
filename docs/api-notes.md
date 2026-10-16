@@ -39,14 +39,32 @@ Dieses Dokument sammelt verbindliche Erkenntnisse, Endpunkt-Spezifikationen und 
 ## 2. Navidrome (Subsonic / OpenSubsonic API)
 
 - **Dokumentation:** https://www.navidrome.org/docs/developers/subsonic-api/ & OpenSubsonic-Spezifikation
-- **Authentifizierung:**
-  - Parameter: `u` (Benutzername), `t` (Token = MD5(Passwort + Salt)), `s` (Zufallssalt), `v=1.16.1`, `c=hoerbox`, `f=json`.
-  - Jeder Request erzeugt ein neues Salt `s` und berechnet `t` neu. Kein Klartext-Passwort im Query-String!
-- **Alben & Playlists:**
-  - GET `/rest/getAlbumList2.view` (Typen: `recent`, `alphabeticalByArtist`, `random`)
-  - GET `/rest/getPlaylists.view` & GET `/rest/getPlaylist.view`
-  - GET `/rest/getAlbum.view` (Tracks eines Albums)
-- **Cover:**
-  - GET `/rest/getCoverArt.view?id=<id>&size=<size>`
-- **Stream:**
-  - GET `/rest/stream.view?id=<id>` (unterstützt HTTP-Range für Seek/iOS)
+- **Antwort-Format:**
+  - Alle JSON-Antworten sind im Wurzelelement `subsonic-response` verpackt:
+    `{ "subsonic-response": { "status": "ok", "version": "1.16.1", ... } }`
+  - Fehler: `{ "subsonic-response": { "status": "failed", "error": { "code": 10, "message": "Required parameter is missing" } } }`
+- **Authentifizierung (Salt + Token):**
+  - Parameter: `u=<user>`, `s=<hex-salt>`, `t=<md5(password + salt)>`, `v=1.16.1`, `c=hoerbox`, `f=json`.
+  - Pro Request wird ein neuer kryptografischer Salt `s` (z. B. 16 Hex-Zeichen) generiert und `t = MD5(password + s)` berechnet.
+  - Niemals Klartextpasswörter im Query-String!
+- **Alben (`getAlbumList2.view`):**
+  - Parameter: `type=recent` (oder `alphabeticalByArtist`, `random`, `newest`), `size=100`.
+  - Liefert: `subsonic-response.albumList2.album: [{ id, name, artist, coverArt, songCount, duration, created }]`.
+- **Playlists (`getPlaylists.view`):**
+  - Liefert: `subsonic-response.playlists.playlist: [{ id, name, coverArt, songCount, duration }]`.
+  - Playlists haben im Kinderbereich Vorrang, wenn welche freigegeben sind.
+- **Album-Tracks (`getAlbum.view`):**
+  - Parameter: `id=<albumId>`.
+  - Liefert: `subsonic-response.album.song: [{ id, title, track, duration, contentType, suffix }]`.
+- **Playlist-Tracks (`getPlaylist.view`):**
+  - Parameter: `id=<playlistId>`.
+  - Liefert: `subsonic-response.playlist.entry: [{ id, title, track, duration, contentType, suffix }]`.
+- **Cover (`getCoverArt.view`):**
+  - Parameter: `id=<coverArtId>`, `size=<px>`.
+  - Liefert Binärbild.
+- **Audio-Streaming (`stream.view`):**
+  - Parameter: `id=<songId>`.
+  - Unterstützt HTTP-Range-Requests (`Range: bytes=start-end`), liefert 206 Partial Content mit `Content-Range` und `Accept-Ranges: bytes`.
+- **Fortschritt & Scrobbling (Abschnitt 4.2):**
+  - Für Musik wird kein Fortschritt gespeichert (`getProgress()` liefert `null`, `saveProgress()` ist ein No-Op).
+  - Kein Scrobbling (`scrobble.view`), keine Bewertungen.
