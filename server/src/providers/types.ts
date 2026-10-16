@@ -1,4 +1,4 @@
-export type Kind = 'audiobook' | 'podcast' | 'album' | 'playlist';
+export type Kind = 'audiobook' | 'podcast' | 'album' | 'playlist' | 'series';
 export type Section = 'books' | 'podcasts' | 'music';
 
 export interface ItemProgress {
@@ -16,6 +16,7 @@ export interface Item {
   durationSec?: number;
   progress?: ItemProgress;
   dominantColor?: string; // Hex, vom BFF berechnet (Abschnitt 5b)
+  bookCount?: number;    // Anzahl der Bücher bei Serien
 }
 
 export interface Track {        // spielbare Einheit (Kapitel, Episode, Lied)
@@ -36,4 +37,5 @@ export interface ContentProvider {
     finished: boolean,
     durationSec?: number
   ): Promise<void>;
+  listSeriesBooks?(seriesId: string): Promise<Item[]>; // Bücher einer Serie
 }

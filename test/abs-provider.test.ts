@@ -49,8 +49,11 @@ describe('Audiobookshelf Provider mit Fixtures (AGENTS.md Abschnitt 4.1)', () =>
     });
   });
 
-  it('listItems für books mappt Hörbücher korrekt auf das Item-Modell', async () => {
+  it('listItems für books mappt Hörbücher korrekt auf das Item-Modell (ohne Serien)', async () => {
     const mockFetch = async (url: string) => {
+      if (url.includes('/series')) {
+        return new Response(JSON.stringify({ results: [] }), { status: 200 });
+      }
       expect(url).toContain('/api/libraries/lib-books-1/items');
       return new Response(
         JSON.stringify({
@@ -82,6 +85,67 @@ describe('Audiobookshelf Provider mit Fixtures (AGENTS.md Abschnitt 4.1)', () =>
 
     expect(items[1].kind).toBe('audiobook');
     expect(items[1].title).toBe('Geschichten aus dem Zauberwald');
+  });
+
+  it('listItems für books gruppiert Serien als Kacheln und listSeriesBooks liefert Bücher', async () => {
+    const mockFetch = async (url: string) => {
+      if (url.includes('/series?')) {
+        return new Response(
+          JSON.stringify({
+            results: [
+              {
+                id: 'series-pumuckl',
+                name: 'Pumuckl',
+                numBooks: 2,
+                books: [
+                  { id: 'book-item-1', updatedAt: 1710000000000 },
+                  { id: 'book-item-2', updatedAt: 1710000000000 }
+                ]
+              }
+            ]
+          }),
+          { status: 200 }
+        );
+      }
+      if (url.includes('/api/series/series-pumuckl')) {
+        return new Response(
+          JSON.stringify({
+            id: 'series-pumuckl',
+            name: 'Pumuckl',
+            books: [bookSingleFileFixture, bookMultiFileFixture]
+          }),
+          { status: 200 }
+        );
+      }
+      if (url.includes('/items?')) {
+        return new Response(
+          JSON.stringify({
+            results: [bookSingleFileFixture, bookMultiFileFixture]
+          }),
+          { status: 200 }
+        );
+      }
+      return new Response(JSON.stringify({}), { status: 404 });
+    };
+
+    const provider = new AudiobookshelfProvider(
+      {
+        baseUrl: 'http://abs.local:13378',
+        booksLibraryId: 'lib-books-1'
+      },
+      mockFetch as any
+    );
+
+    const items = await provider.listItems('books');
+    expect(items).toHaveLength(1);
+    expect(items[0].kind).toBe('series');
+    expect(items[0].title).toBe('Pumuckl');
+    expect(items[0].bookCount).toBe(2);
+
+    const seriesBooks = await provider.listSeriesBooks(items[0].id);
+    expect(seriesBooks).toHaveLength(2);
+    expect(seriesBooks[0].kind).toBe('audiobook');
+    expect(seriesBooks[0].title).toBe('Die kleinen Abenteurer');
   });
 
   it('listTracks normalisiert kapitelbasiertes Einzeldatei-Hörbuch zu Tracks', async () => {

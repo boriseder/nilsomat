@@ -1,4 +1,4 @@
-export type Kind = 'audiobook' | 'podcast' | 'album' | 'playlist';
+export type Kind = 'audiobook' | 'podcast' | 'album' | 'playlist' | 'series';
 export type Section = 'books' | 'podcasts' | 'music';
 
 export interface ItemProgress {
@@ -16,6 +16,7 @@ export interface Item {
   durationSec?: number;
   progress?: ItemProgress;
   dominantColor?: string;
+  bookCount?: number;
 }
 
 export interface Track {

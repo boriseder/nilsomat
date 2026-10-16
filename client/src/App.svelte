@@ -12,9 +12,11 @@
   import FullscreenPlayer from './player/FullscreenPlayer.svelte';
   import MiniPlayer from './player/MiniPlayer.svelte';
 
-  let currentView = $state<'home' | 'grid' | 'episodes'>('home');
+  let currentView = $state<'home' | 'grid' | 'episodes' | 'series'>('home');
   let selectedSection = $state<Section | null>(null);
   let selectedItem = $state<Item | null>(null);
+  let selectedSeries = $state<Item | null>(null);
+  let seriesBooks = $state<Item[]>([]);
   let activeSections = $state<Section[]>(['books', 'podcasts', 'music']);
   let items = $state<Item[]>([]);
   let tracks = $state<Track[]>([]);
@@ -92,7 +94,22 @@
     handleInteraction();
     selectedItem = item;
 
-    if (item.kind === 'podcast') {
+    if (item.kind === 'series') {
+      selectedSeries = item;
+      loading = true;
+      hasError = false;
+      currentView = 'series';
+      try {
+        const res = await fetch(`/api/kid/series/${encodeURIComponent(item.id)}/items`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        seriesBooks = data.items || [];
+        loading = false;
+      } catch {
+        loading = false;
+        hasError = true;
+      }
+    } else if (item.kind === 'podcast') {
       loading = true;
       hasError = false;
       currentView = 'episodes';
@@ -140,6 +157,8 @@
     currentView = 'home';
     selectedSection = null;
     selectedItem = null;
+    selectedSeries = null;
+    seriesBooks = [];
     items = [];
     tracks = [];
     hasError = false;
@@ -148,6 +167,8 @@
   function handleBackToGrid(): void {
     currentView = 'grid';
     selectedItem = null;
+    selectedSeries = null;
+    seriesBooks = [];
     tracks = [];
     hasError = false;
   }
@@ -175,7 +196,9 @@
     <ErrorView
       onBack={currentView !== 'home' ? handleBackToHome : undefined}
       onRetry={() => {
-        if (selectedSection) {
+        if (currentView === 'series' && selectedSeries) {
+          handleSelectItem(selectedSeries);
+        } else if (selectedSection) {
           handleSelectSection(selectedSection);
         } else {
           loadSections();
@@ -197,6 +220,14 @@
       section={selectedSection}
       {items}
       onBack={handleBackToHome}
+      onSelectItem={handleSelectItem}
+    />
+  {:else if currentView === 'series' && selectedSeries}
+    <ItemGrid
+      section="books"
+      titleOverride={selectedSeries.title}
+      items={seriesBooks}
+      onBack={handleBackToGrid}
       onSelectItem={handleSelectItem}
     />
   {:else if currentView === 'episodes' && selectedItem}

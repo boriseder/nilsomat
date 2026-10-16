@@ -28,10 +28,20 @@ export class DB {
   private encryptionKey: Buffer;
 
   constructor(dbPath?: string) {
-    const finalPath =
-      dbPath ||
-      process.env.DB_PATH ||
-      (fs.existsSync('/data') ? '/data/config.sqlite' : path.resolve(process.cwd(), 'data/config.sqlite'));
+    let finalPath = dbPath || process.env.DB_PATH;
+    if (!finalPath) {
+      if (fs.existsSync('/data')) {
+        finalPath = '/data/config.sqlite';
+      } else {
+        const candidates = [
+          path.resolve(process.cwd(), 'data/config.sqlite'),
+          path.resolve(process.cwd(), 'server/data/config.sqlite'),
+          path.resolve(process.cwd(), '../data/config.sqlite')
+        ];
+        const existing = candidates.find((p) => fs.existsSync(p) && fs.statSync(p).size > 0);
+        finalPath = existing || candidates[0];
+      }
+    }
 
     const dir = path.dirname(finalPath);
     if (!fs.existsSync(dir)) {

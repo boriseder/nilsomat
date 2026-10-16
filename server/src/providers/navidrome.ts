@@ -5,7 +5,7 @@ export interface NavidromeConfig {
   baseUrl: string;
   user?: string;
   password?: string;
-  albumSortType?: 'recent' | 'alphabeticalByArtist' | 'random' | 'newest';
+  albumSortType?: 'recent' | 'alphabeticalByArtist' | 'alphabeticalByName' | 'random' | 'newest';
   sharedPlaylistIds?: string[];
 }
 
@@ -83,9 +83,12 @@ export class NavidromeProvider implements ContentProvider {
       const res = await this.fetchFn(plUrl);
       if (res.ok) {
         const json = await res.json();
-        const playlists: any[] = json['subsonic-response']?.playlists?.playlist || [];
+        let rawPlaylists = json['subsonic-response']?.playlists?.playlist || [];
+        if (!Array.isArray(rawPlaylists) && rawPlaylists && typeof rawPlaylists === 'object') {
+          rawPlaylists = [rawPlaylists];
+        }
 
-        for (const pl of playlists) {
+        for (const pl of rawPlaylists) {
           // Falls bestimmte Playlists freigegeben sind, filtern
           const isExplicitlyShared =
             this.config.sharedPlaylistIds && this.config.sharedPlaylistIds.length > 0
@@ -110,30 +113,46 @@ export class NavidromeProvider implements ContentProvider {
       // Weiter mit Alben
     }
 
-    // 2. Alben abrufen
+    // 2. Alben abrufen (Standard: newest / alphabeticalByName anstelle von recent, da recent nur gescrobbelte Alben liefert)
     try {
-      const sortType = this.config.albumSortType || 'recent';
+      const sortType = this.config.albumSortType || 'newest';
       const albUrl = this.buildUrl('getAlbumList2.view', {
         type: sortType,
-        size: '100'
+        size: '500'
       });
       const res = await this.fetchFn(albUrl);
+      let albums: any[] = [];
       if (res.ok) {
         const json = await res.json();
-        const albums: any[] = json['subsonic-response']?.albumList2?.album || [];
+        const raw = json['subsonic-response']?.albumList2?.album || [];
+        albums = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? [raw] : []);
+      }
 
-        for (const alb of albums) {
-          const id = this.makeId('album', alb.id);
-          const coverArtId = alb.coverArt || alb.id;
-          items.push({
-            id,
-            section: 'music',
-            kind: 'album',
-            title: alb.name || 'Album',
-            coverUrl: `/media/cover/${id}?w=640&v=${encodeURIComponent(coverArtId)}`,
-            durationSec: alb.duration ? Math.round(alb.duration) : undefined
-          });
+      // Fallback: Falls keine Alben gefunden wurden, mit alphabeticalByName versuchen
+      if (albums.length === 0 && sortType !== 'alphabeticalByName') {
+        const fallbackUrl = this.buildUrl('getAlbumList2.view', {
+          type: 'alphabeticalByName',
+          size: '500'
+        });
+        const fbRes = await this.fetchFn(fallbackUrl);
+        if (fbRes.ok) {
+          const fbJson = await fbRes.json();
+          const rawFb = fbJson['subsonic-response']?.albumList2?.album || [];
+          albums = Array.isArray(rawFb) ? rawFb : (rawFb && typeof rawFb === 'object' ? [rawFb] : []);
         }
+      }
+
+      for (const alb of albums) {
+        const id = this.makeId('album', alb.id);
+        const coverArtId = alb.coverArt || alb.id;
+        items.push({
+          id,
+          section: 'music',
+          kind: 'album',
+          title: alb.name || alb.title || 'Album',
+          coverUrl: `/media/cover/${id}?w=640&v=${encodeURIComponent(coverArtId)}`,
+          durationSec: alb.duration ? Math.round(alb.duration) : undefined
+        });
       }
     } catch {
       // Fehler stillschweigend fangen
@@ -154,7 +173,8 @@ export class NavidromeProvider implements ContentProvider {
         const res = await this.fetchFn(url);
         if (res.ok) {
           const json = await res.json();
-          const songs: any[] = json['subsonic-response']?.album?.song || [];
+          const raw = json['subsonic-response']?.album?.song || [];
+          const songs: any[] = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? [raw] : []);
           for (const s of songs) {
             tracks.push({
               id: this.makeId('track', s.id),
@@ -174,7 +194,8 @@ export class NavidromeProvider implements ContentProvider {
         const res = await this.fetchFn(url);
         if (res.ok) {
           const json = await res.json();
-          const entries: any[] = json['subsonic-response']?.playlist?.entry || [];
+          const raw = json['subsonic-response']?.playlist?.entry || [];
+          const entries: any[] = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? [raw] : []);
           for (const e of entries) {
             tracks.push({
               id: this.makeId('track', e.id),

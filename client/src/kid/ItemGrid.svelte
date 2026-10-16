@@ -8,16 +8,18 @@
     items: Item[];
     onBack: () => void;
     onSelectItem: (item: Item) => void;
+    titleOverride?: string;
   }
 
-  const { section, items, onBack, onSelectItem }: Props = $props();
+  const { section, items, onBack, onSelectItem, titleOverride }: Props = $props();
 
   const sectionTitle = $derived(
-    section === 'books'
-      ? strings.kid.sections.books
-      : section === 'podcasts'
-        ? strings.kid.sections.podcasts
-        : strings.kid.sections.music
+    titleOverride ||
+      (section === 'books'
+        ? strings.kid.sections.books
+        : section === 'podcasts'
+          ? strings.kid.sections.podcasts
+          : strings.kid.sections.music)
   );
 
   const sectionIcon = $derived(
@@ -59,6 +61,9 @@
 
           <div class="card-info">
             <span class="card-title">{item.title}</span>
+            {#if item.bookCount}
+              <span class="card-badge">{item.bookCount} {item.bookCount === 1 ? 'Folge' : 'Folgen'}</span>
+            {/if}
           </div>
         </button>
       {/each}
@@ -156,5 +161,16 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.3;
+  }
+
+  .card-badge {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-books);
+    background: rgba(245, 158, 11, 0.15);
+    padding: 2px 10px;
+    border-radius: 8px;
   }
 </style>

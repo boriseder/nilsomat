@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "pnpm --filter client build && pnpm --filter server build",
+    "start": "node server/dist/index.js",
     "dev": "pnpm --parallel --filter client --filter server dev",
     "lint": "pnpm --recursive run lint",
     "typecheck": "pnpm --recursive run typecheck",

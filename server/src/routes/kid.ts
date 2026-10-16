@@ -87,6 +87,41 @@ kidRoutes.get('/items', async (c) => {
   }
 });
 
+// Bücher einer Serie auflisten (Abschnitt 3 & 5.2)
+kidRoutes.get('/series/:seriesId/items', async (c) => {
+  const seriesId = c.req.param('seriesId');
+  const db = getDB();
+
+  if (db.isItemHidden(seriesId)) {
+    return c.json({ items: [] });
+  }
+
+  const provider = getProviderForId(seriesId);
+  if (!provider || !provider.listSeriesBooks) {
+    return c.json({ items: [] });
+  }
+
+  try {
+    const books = await provider.listSeriesBooks(seriesId);
+    const visible = books.filter((b) => !db.isItemHidden(b.id));
+
+    const withProgress = await Promise.all(
+      visible.map(async (b) => {
+        try {
+          const progress = await provider.getProgress(b.id);
+          if (progress) return { ...b, progress };
+        } catch {}
+        return b;
+      })
+    );
+
+    return c.json({ items: withProgress });
+  } catch (err: any) {
+    db.log('error', 'abs', `Fehler beim Laden der Serie (${seriesId}): ${err?.message || err}`);
+    return c.json({ items: [] });
+  }
+});
+
 // Tracks/Episoden für ein Item auflisten
 kidRoutes.get('/tracks/:itemId', async (c) => {
   const itemId = c.req.param('itemId');

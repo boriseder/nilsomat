@@ -75,6 +75,97 @@ export class AudiobookshelfProvider implements ContentProvider {
 
     if (!libraryId) return [];
 
+    if (section === 'books') {
+      try {
+        // 1. Versuche Serien aus der Hörbücher-Bibliothek zu laden (wie in ABS)
+        const seriesUrl = `${this.config.baseUrl}/api/libraries/${libraryId}/series?limit=100`;
+        const seriesRes = await this.fetchFn(seriesUrl, { headers: this.authHeaders });
+        let seriesList: any[] = [];
+        if (seriesRes.ok) {
+          const seriesData = await seriesRes.json();
+          seriesList = seriesData.results || [];
+        }
+
+        // 2. Alle Bücher abrufen
+        const itemsUrl = `${this.config.baseUrl}/api/libraries/${libraryId}/items?sort=media.metadata.title&limit=1000`;
+        const itemsRes = await this.fetchFn(itemsUrl, { headers: this.authHeaders });
+        let allBooks: any[] = [];
+        if (itemsRes.ok) {
+          const itemsData = await itemsRes.json();
+          allBooks = itemsData.results || [];
+        }
+
+        // Falls Serien existieren: Zeige Serien als Kacheln + einzelne Bücher außerhalb von Serien
+        if (seriesList.length > 0) {
+          const items: Item[] = [];
+          const booksInSeriesIds = new Set<string>();
+
+          for (const s of seriesList) {
+            const seriesBooks: any[] = s.books || [];
+            seriesBooks.forEach((b) => booksInSeriesIds.add(b.id));
+
+            // Erstes Buch als Cover der Serie verwenden
+            const firstBook = seriesBooks[0];
+            const coverItemId = firstBook ? firstBook.id : s.id;
+            const updatedAt = firstBook?.updatedAt || 1;
+            const coverUrl = `/media/cover/${this.makeItemId(libraryId!, coverItemId)}?w=640&v=${updatedAt}`;
+
+            items.push({
+              id: this.makeItemId(libraryId!, `series_${s.id}`),
+              section: 'books',
+              kind: 'series',
+              title: s.name || 'Serie',
+              coverUrl,
+              bookCount: s.numBooks || seriesBooks.length || undefined
+            });
+          }
+
+          // Eigenständige Hörbücher hinzufügen, die keiner Serie angehören
+          for (const b of allBooks) {
+            if (!booksInSeriesIds.has(b.id)) {
+              const id = this.makeItemId(libraryId!, b.id);
+              const title = b.media?.metadata?.title || 'Ohne Titel';
+              const durationSec = b.media?.duration ? Math.round(b.media.duration) : undefined;
+              const updatedAt = b.updatedAt || 1;
+              const coverUrl = `/media/cover/${id}?w=640&v=${updatedAt}`;
+
+              items.push({
+                id,
+                section: 'books',
+                kind: 'audiobook',
+                title,
+                coverUrl,
+                durationSec
+              });
+            }
+          }
+
+          return items;
+        }
+
+        // Fallback: Wenn keine Serien vorhanden sind, alle Bücher normal auflisten
+        return allBooks.map((item) => {
+          const id = this.makeItemId(libraryId!, item.id);
+          const title = item.media?.metadata?.title || 'Ohne Titel';
+          const durationSec = item.media?.duration ? Math.round(item.media.duration) : undefined;
+          const updatedAt = item.updatedAt || 1;
+          const coverUrl = `/media/cover/${id}?w=640&v=${updatedAt}`;
+
+          return {
+            id,
+            section: 'books',
+            kind: 'audiobook',
+            title,
+            coverUrl,
+            durationSec
+          };
+        });
+      } catch {
+        return [];
+      }
+    }
+
+    // Podcasts auflisten
     try {
       const url = `${this.config.baseUrl}/api/libraries/${libraryId}/items?sort=media.metadata.title`;
       const res = await this.fetchFn(url, { headers: this.authHeaders });
@@ -85,7 +176,6 @@ export class AudiobookshelfProvider implements ContentProvider {
 
       return results.map((item) => {
         const id = this.makeItemId(libraryId!, item.id);
-        const kind = section === 'books' ? 'audiobook' : 'podcast';
         const title = item.media?.metadata?.title || 'Ohne Titel';
         const durationSec = item.media?.duration ? Math.round(item.media.duration) : undefined;
         const updatedAt = item.updatedAt || 1;
@@ -93,8 +183,62 @@ export class AudiobookshelfProvider implements ContentProvider {
 
         return {
           id,
-          section,
-          kind,
+          section: 'podcasts',
+          kind: 'podcast',
+          title,
+          coverUrl,
+          durationSec
+        };
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  async listSeriesBooks(seriesItemId: string): Promise<Item[]> {
+    const parsed = this.parseId(seriesItemId);
+    if (!parsed) return [];
+    const cleanSeriesId = parsed.itemId.replace(/^series_/, '');
+
+    try {
+      const res = await this.fetchFn(
+        `${this.config.baseUrl}/api/series/${cleanSeriesId}`,
+        { headers: this.authHeaders }
+      );
+      if (!res.ok) return [];
+
+      const data = await res.json();
+      const books: any[] = data.books || [];
+
+      // Sortiere Bücher nach Serien-Sequenz (Folge 1, 2, 3...)
+      books.sort((a, b) => {
+        const getSeq = (item: any) => {
+          const seriesObj =
+            item.media?.metadata?.series?.find((s: any) => s.id === cleanSeriesId) ||
+            item.series?.find((s: any) => s.id === cleanSeriesId) ||
+            item.media?.metadata?.series?.[0];
+          const seq = seriesObj?.sequence;
+          const num = parseFloat(seq);
+          return isNaN(num) ? 9999 : num;
+        };
+        const seqDiff = getSeq(a) - getSeq(b);
+        if (seqDiff !== 0) return seqDiff;
+        const titleA = a.media?.metadata?.title || a.title || '';
+        const titleB = b.media?.metadata?.title || b.title || '';
+        return titleA.localeCompare(titleB, 'de', { numeric: true });
+      });
+
+      return books.map((book) => {
+        const id = this.makeItemId(parsed.libraryId, book.id);
+        const title = book.media?.metadata?.title || book.title || 'Buch';
+        const durationSec = book.media?.duration ? Math.round(book.media.duration) : undefined;
+        const updatedAt = book.updatedAt || 1;
+        const coverUrl = `/media/cover/${id}?w=640&v=${updatedAt}`;
+
+        return {
+          id,
+          section: 'books',
+          kind: 'audiobook',
           title,
           coverUrl,
           durationSec
@@ -119,12 +263,58 @@ export class AudiobookshelfProvider implements ContentProvider {
       const item = await res.json();
       const tracks: Track[] = [];
 
-      if (item.mediaType === 'book') {
+      // Podcast-Episoden robust extrahieren (Array oder Object/Map)
+      let rawEpisodes: any[] = [];
+      if (Array.isArray(item.media?.episodes)) {
+        rawEpisodes = item.media.episodes;
+      } else if (item.media?.episodes && typeof item.media.episodes === 'object') {
+        rawEpisodes = Object.values(item.media.episodes);
+      } else if (Array.isArray(item.episodes)) {
+        rawEpisodes = item.episodes;
+      } else if (item.episodes && typeof item.episodes === 'object') {
+        rawEpisodes = Object.values(item.episodes);
+      }
+
+      const isPodcast =
+        item.mediaType === 'podcast' ||
+        item.media?.mediaType === 'podcast' ||
+        rawEpisodes.length > 0;
+
+      if (isPodcast) {
+        // Podcast: Episoden nach Veröffentlichung absteigend sortiert, max 30
+        const parseTimestamp = (val: any) => {
+          if (!val) return 0;
+          if (typeof val === 'number') return val;
+          const parsedTime = new Date(val).getTime();
+          return isNaN(parsedTime) ? 0 : parsedTime;
+        };
+
+        rawEpisodes.sort((a, b) => {
+          const timeB = parseTimestamp(b.publishedAt || b.pubDate || b.date);
+          const timeA = parseTimestamp(a.publishedAt || a.pubDate || a.date);
+          return timeB - timeA;
+        });
+
+        const limited = rawEpisodes.slice(0, 30);
+        limited.forEach((ep) => {
+          const fileId = ep.audioFile?.ino || ep.audioFile?.id || ep.id;
+          const trackId = this.makeTrackId(parsed.libraryId, parsed.itemId, `ep_${ep.id}`);
+          const streamId = `${parsed.libraryId}:${parsed.itemId}:${fileId}`;
+
+          tracks.push({
+            id: trackId,
+            title: ep.title || 'Episode',
+            durationSec: Math.round(ep.duration || 0),
+            startOffsetSec: 0,
+            streamUrl: `/media/stream/abs:${streamId}`
+          });
+        });
+      } else {
+        // Buch: Kapitel oder Audiodateien normalisieren
         const chapters: any[] = item.media?.chapters || [];
         const audioFiles: any[] = item.media?.audioFiles || [];
 
         if (chapters.length > 0) {
-          // Kapitelbasiert (z. B. Einzeldatei m4b)
           const primaryFileId = audioFiles[0]?.ino || audioFiles[0]?.id || 'audio';
           chapters.forEach((ch, idx) => {
             const start = Math.round(ch.start || 0);
@@ -142,7 +332,6 @@ export class AudiobookshelfProvider implements ContentProvider {
             });
           });
         } else if (audioFiles.length > 0) {
-          // Mehrere Audiodateien (z. B. CD1, CD2)
           audioFiles.forEach((af, idx) => {
             const fileId = af.ino || af.id || `${idx}`;
             const trackId = this.makeTrackId(parsed.libraryId, parsed.itemId, `f_${fileId}`);
@@ -158,25 +347,6 @@ export class AudiobookshelfProvider implements ContentProvider {
             });
           });
         }
-      } else if (item.mediaType === 'podcast') {
-        // Podcast: Episoden nach Veröffentlichung absteigend sortiert, max 30
-        const episodes: any[] = [...(item.media?.episodes || [])];
-        episodes.sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0));
-        const limited = episodes.slice(0, 30);
-
-        limited.forEach((ep) => {
-          const fileId = ep.audioFile?.ino || ep.id;
-          const trackId = this.makeTrackId(parsed.libraryId, parsed.itemId, `ep_${ep.id}`);
-          const streamId = `${parsed.libraryId}:${parsed.itemId}:${fileId}`;
-
-          tracks.push({
-            id: trackId,
-            title: ep.title || 'Episode',
-            durationSec: Math.round(ep.duration || 0),
-            startOffsetSec: 0,
-            streamUrl: `/media/stream/abs:${streamId}`
-          });
-        });
       }
 
       return tracks;
