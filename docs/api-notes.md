@@ -9,15 +9,30 @@ Dieses Dokument sammelt verbindliche Erkenntnisse, Endpunkt-Spezifikationen und 
 - **Dokumentation:** https://api.audiobookshelf.org
 - **Authentifizierung:** Dedizierter Kind-Benutzer (kein Admin) mit Bearer-Token (`Authorization: Bearer <token>`) oder Login via `/login` mit Benutzername und Passwort.
 - **Bibliotheken:**
-  - GET `/api/libraries` liefert alle Bibliotheken mit `id`, `name`, `mediaType` (`book` oder `podcast`).
+  - GET `/api/libraries` liefert `{ libraries: [{ id, name, mediaType: "book" | "podcast", icon, ... }] }`.
   - Zuordnung: Eine Bibliothek für Hörbücher (`mediaType: book`), eine für Podcasts (`mediaType: podcast`).
-- **Hörbücher & Podcasts:**
-  - GET `/api/libraries/:id/items`
-  - GET `/api/items/:id`
-  - Cover: `/api/items/:id/cover` (mit Parametern wie `width`, `height`, `format`)
-  - Streaming: `/api/items/:id/file/:fileId`
+- **Hörbücher (Items & Tracks):**
+  - GET `/api/libraries/:libraryId/items?sort=media.metadata.title`
+  - Item-Detail: GET `/api/items/:id?expanded=1`
+  - Einzeldatei-Hörbuch mit Kapiteln: `media.chapters` (`[{ id, start, end, title }]`) und eine Audiodatei `media.audioFiles[0]`.
+    Wird normalisiert zu `Track[]`, wobei jeder Track `startOffsetSec = chapter.start` und `durationSec = chapter.end - chapter.start` erhält.
+  - Mehrdatei-Hörbuch (z. B. CD1, CD2...): `media.audioFiles` (`[{ ino, index, duration, metadata: { filename } }]`).
+    Wird normalisiert zu `Track[]`, wobei jede Audiodatei ein Track mit eigenem Stream-Link ist.
+- **Podcasts (Sendung & Episoden):**
+  - GET `/api/libraries/:libraryId/items` liefert Sendungen als Items.
+  - Item-Detail: GET `/api/items/:id?expanded=1` enthält `media.episodes` (`[{ id, title, duration, publishedAt, audioFile: { ino } }]`).
+  - Sortierung: Neueste zuerst (`publishedAt` absteigend), maximal 30 Episoden anzeigen.
+- **Cover:**
+  - GET `/api/items/:id/cover`
+  - Unterstützt Query-Parameter `raw=1` für Originalbild in maximaler Auflösung.
+- **Audio-Streaming:**
+  - GET `/api/items/:id/file/:fileId`
+  - Unterstützt HTTP-Range-Requests (`Range: bytes=start-end`), liefert 206 Partial Content mit `Content-Range` und `Accept-Ranges: bytes`.
 - **Fortschritt:**
-  - Playback-Session (`/api/session/local`) und/oder `PATCH /api/me/progress/:id` (Details werden in M1 final gegen Doku/Instanz verifiziert).
+  - GET `/api/me/progress/:libraryItemId`
+  - PATCH `/api/me/progress/:libraryItemId` mit Body: `{ currentTime: number, duration?: number, isFinished?: boolean }`
+  - Für Podcast-Episoden: PATCH `/api/me/progress/:libraryItemId/:episodeId`
+
 
 ---
 

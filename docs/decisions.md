@@ -54,3 +54,17 @@ Dieses Dokument erfasst alle maßgeblichen technischen Entscheidungen, Begründu
 - **Datum:** Meilenstein 0
 - **Zweck:** Schnelle Unit-Tests (u.a. für Scan auf verbotene Wörter und Provider-Fixtures), realitätsnahe E2E-Prüfung auf iOS/iPadOS-WebKit im Viewport 820 × 1180 (hoch) und 1180 × 820 (quer).
 - **Begründung:** Verbindliche Vorgabe aus `AGENTS.md`.
+
+---
+
+## 6. Audiobookshelf: Fortschrittsspeicherung via `me/progress`
+
+- **Entscheidung:** Direkte Fortschrittsspeicherung über `PATCH /api/me/progress/:libraryItemId` anstelle von stateful Playback-Sessions (`/api/session/local`).
+- **Datum:** Meilenstein 1
+- **Zweck:** Speichern und Abrufen des Hörfortschritts für Hörbücher und Podcasts.
+- **Alternativen:** Permanente ABS-Playback-Sessions (`/api/session/local` + regelmäßiges Session-Sync).
+- **Begründung:**
+  - `PATCH /api/me/progress/:id` ist zustandslos, idempotent und robust gegen Netzwerkunterbrechungen (z. B. WLAN-Verlust auf dem iPad oder Suspendieren der PWA).
+  - Playback-Sessions auf dem ABS-Server verfallen nach Inaktivität und führen bei verspätetem Sync zu 404-Fehlern.
+  - Das Speichern alle 10 s sowie bei `pause`, `pagehide` und `visibilitychange` (via `fetch` mit `keepalive`) funktioniert mit dem zustandslosen Endpunkt ohne Session-Lifecycle-Overhead zuverlässig.
+
