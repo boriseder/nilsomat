@@ -1,5 +1,5 @@
 import { AudiobookshelfProvider, type ABSConfig } from './abs.js';
-import { NavidromeProvider } from './navidrome.js';
+import { NavidromeProvider, type NavidromeConfig } from './navidrome.js';
 import type { ContentProvider, Section } from './types.js';
 
 let absProvider = new AudiobookshelfProvider({
@@ -9,7 +9,11 @@ let absProvider = new AudiobookshelfProvider({
   podcastsLibraryId: process.env.ABS_PODCASTS_LIB_ID || ''
 });
 
-let navidromeProvider = new NavidromeProvider();
+let navidromeProvider = new NavidromeProvider({
+  baseUrl: process.env.NAVIDROME_URL || 'http://localhost:4533',
+  user: process.env.NAVIDROME_USER || '',
+  password: process.env.NAVIDROME_PASSWORD || ''
+});
 
 export function setABSProvider(provider: AudiobookshelfProvider): void {
   absProvider = provider;
@@ -17,6 +21,14 @@ export function setABSProvider(provider: AudiobookshelfProvider): void {
 
 export function updateABSConfig(config: ABSConfig): void {
   absProvider = new AudiobookshelfProvider(config);
+}
+
+export function setNavidromeProvider(provider: NavidromeProvider): void {
+  navidromeProvider = provider;
+}
+
+export function updateNavidromeConfig(config: Partial<NavidromeConfig>): void {
+  navidromeProvider = new NavidromeProvider(config);
 }
 
 export function getABSProvider(): AudiobookshelfProvider {
