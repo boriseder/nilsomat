@@ -18,7 +18,8 @@ export const strings = {
       next: 'Weiter',
       previous: 'Zurück',
       sleepTimer: 'Schlummern',
-      close: 'Schließen'
+      close: 'Schließen',
+      retry: 'Nochmal versuchen'
     },
     status: {
       loading: 'Lädt...',

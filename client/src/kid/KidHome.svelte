@@ -1,12 +1,23 @@
 <script lang="ts">
+  import type { Item, Section } from '../types';
   import { strings } from '../strings';
+  import ContinueListening from './ContinueListening.svelte';
 
   interface Props {
-    onSelectSection: (section: 'books' | 'podcasts' | 'music') => void;
+    activeSections?: Section[];
+    recentItems?: Item[];
+    onSelectSection: (section: Section) => void;
+    onSelectRecent?: (item: Item) => void;
     onParentTrigger: () => void;
   }
 
-  const { onSelectSection, onParentTrigger }: Props = $props();
+  const {
+    activeSections = ['books', 'podcasts', 'music'],
+    recentItems = [],
+    onSelectSection,
+    onSelectRecent = () => {},
+    onParentTrigger
+  }: Props = $props();
 
   let holdTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -41,33 +52,43 @@
     </div>
   </header>
 
+  {#if recentItems.length > 0}
+    <ContinueListening items={recentItems} onSelectItem={onSelectRecent} />
+  {/if}
+
   <main class="grid-container">
-    <button
-      type="button"
-      class="tile tile-books"
-      onclick={() => onSelectSection('books')}
-    >
-      <span class="tile-icon" aria-hidden="true">📚</span>
-      <span class="tile-label">{strings.kid.sections.books}</span>
-    </button>
+    {#if activeSections.includes('books')}
+      <button
+        type="button"
+        class="tile tile-books"
+        onclick={() => onSelectSection('books')}
+      >
+        <span class="tile-icon" aria-hidden="true">📚</span>
+        <span class="tile-label">{strings.kid.sections.books}</span>
+      </button>
+    {/if}
 
-    <button
-      type="button"
-      class="tile tile-podcasts"
-      onclick={() => onSelectSection('podcasts')}
-    >
-      <span class="tile-icon" aria-hidden="true">🎙️</span>
-      <span class="tile-label">{strings.kid.sections.podcasts}</span>
-    </button>
+    {#if activeSections.includes('podcasts')}
+      <button
+        type="button"
+        class="tile tile-podcasts"
+        onclick={() => onSelectSection('podcasts')}
+      >
+        <span class="tile-icon" aria-hidden="true">🎙️</span>
+        <span class="tile-label">{strings.kid.sections.podcasts}</span>
+      </button>
+    {/if}
 
-    <button
-      type="button"
-      class="tile tile-music"
-      onclick={() => onSelectSection('music')}
-    >
-      <span class="tile-icon" aria-hidden="true">🎵</span>
-      <span class="tile-label">{strings.kid.sections.music}</span>
-    </button>
+    {#if activeSections.includes('music')}
+      <button
+        type="button"
+        class="tile tile-music"
+        onclick={() => onSelectSection('music')}
+      >
+        <span class="tile-icon" aria-hidden="true">🎵</span>
+        <span class="tile-label">{strings.kid.sections.music}</span>
+      </button>
+    {/if}
   </main>
 </div>
 
