@@ -118,9 +118,9 @@
         loading = false;
 
         if (itemTracks.length > 0) {
+          showFullscreenPlayer = true;
           const startOffset = item.progress?.positionSec || 0;
           await audioEngine.playItem(item, itemTracks, 0, startOffset);
-          showFullscreenPlayer = true;
         }
       } catch {
         loading = false;

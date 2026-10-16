@@ -206,13 +206,11 @@ class AudioEngine {
       this.audio.currentTime = this.currentTime;
     }
 
-    try {
-      await this.audio.play();
-    } catch {
+    this.audio.play().catch(() => {
       this.isPlaying = false;
       this.isLoading = false;
       this.notify();
-    }
+    });
   }
 
   public async play(): Promise<void> {

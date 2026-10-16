@@ -31,7 +31,27 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
+        runtimeCaching: [
+          {
+            urlPattern: /\/media\/cover\/.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'hoerbox-covers',
+              expiration: {
+                maxEntries: 400,
+                maxAgeSeconds: 30 * 24 * 60 * 60 // 30 Tage
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /\/media\/stream\/.*/,
+            handler: 'NetworkOnly'
+          }
+        ]
       }
     })
   ],

@@ -312,11 +312,11 @@
 </script>
 
 <div class="parent-overlay">
-  <div class="parent-dialog">
+  <div class="parent-dialog parent-modal">
     <header class="dialog-header">
       <h2 class="dialog-title">{strings.parent.title}</h2>
-      {#if authenticated}
-        <button type="button" class="btn-close" onclick={onClose}>
+      {#if hasPin}
+        <button type="button" class="btn-close" onclick={onClose} aria-label={strings.kid.actions.close}>
           ✕
         </button>
       {/if}

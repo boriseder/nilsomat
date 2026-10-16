@@ -47,9 +47,9 @@
   const timerOptions: SleepTimerDuration[] = [15, 30, 45, 60, null];
 </script>
 
-<div class="player-view kid-area">
+<div class="player-view player-fullscreen kid-area">
   <header class="player-header">
-    <button type="button" class="btn-back" onclick={onClose}>
+    <button type="button" class="btn-back btn-close-player" onclick={onClose}>
       <span aria-hidden="true">⬅️</span>
       <span>{strings.kid.actions.back}</span>
     </button>
