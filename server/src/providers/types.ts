@@ -30,5 +30,10 @@ export interface ContentProvider {
   listItems(section: Section): Promise<Item[]>;
   listTracks(itemId: string): Promise<Track[]>;       // Podcast: Episoden
   getProgress(itemId: string): Promise<Item['progress'] | null>;
-  saveProgress(itemId: string, positionSec: number, finished: boolean): Promise<void>;
+  saveProgress(
+    itemId: string,
+    positionSec: number,
+    finished: boolean,
+    durationSec?: number
+  ): Promise<void>;
 }
