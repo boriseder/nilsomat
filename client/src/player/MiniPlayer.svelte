@@ -25,6 +25,8 @@
   const progressPercent = $derived(
     duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0
   );
+
+  const activeCoverUrl = $derived(track.coverUrl || item.coverUrl);
 </script>
 
 <div
@@ -42,8 +44,8 @@
 
   <div class="mini-cover">
     <CoverImage
-      coverSrc={item.coverUrl}
-      altText={item.title}
+      coverSrc={activeCoverUrl}
+      altText={track.title || item.title}
       dominantColor={item.dominantColor}
       size={320}
       loading="eager"

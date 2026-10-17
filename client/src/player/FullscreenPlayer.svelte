@@ -45,6 +45,8 @@
     isBookOrPodcast ? strings.kid.actions.tracklistChapters : strings.kid.actions.tracklistSongs
   );
 
+  const activeCoverUrl = $derived(track.coverUrl || item.coverUrl);
+
   const progressPercent = $derived(
     duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0
   );
@@ -157,6 +159,15 @@
                   <div class="active-equalizer-pill" style="background: {glowColor};">
                     <Icon name={isPlaying ? 'pause' : 'play'} size={24} color="#ffffff" />
                   </div>
+                {:else if t.coverUrl}
+                  <div class="track-cover-thumb">
+                    <CoverImage
+                      coverSrc={t.coverUrl}
+                      altText={t.title}
+                      size={320}
+                      loading="lazy"
+                    />
+                  </div>
                 {:else}
                   <div class="track-index-num">
                     <span>{idx + 1}</span>
@@ -192,8 +203,8 @@
         <div class="cover-ambient-glow" style="background: {glowColor};"></div>
         <div class="player-cover-box">
           <CoverImage
-            coverSrc={item.coverUrl}
-            altText={item.title}
+            coverSrc={activeCoverUrl}
+            altText={track.title || item.title}
             dominantColor={item.dominantColor}
             size={1280}
             loading="eager"
@@ -599,6 +610,16 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+
+  .track-cover-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    flex-shrink: 0;
   }
 
   .track-row-info {

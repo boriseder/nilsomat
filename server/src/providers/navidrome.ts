@@ -177,15 +177,25 @@ export class NavidromeProvider implements ContentProvider {
         const res = await this.fetchFn(url);
         if (res.ok) {
           const json = await res.json();
-          const raw = json['subsonic-response']?.album?.song || [];
+          const album = json['subsonic-response']?.album;
+          const albumCoverArt = album?.coverArt;
+          const raw = album?.song || [];
           const songs: any[] = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? [raw] : []);
           for (const s of songs) {
+            let coverUrl: string | undefined = undefined;
+            // Track-spezifisches Cover ermitteln (falls abweichend vom Album)
+            if (s.coverArt && (!albumCoverArt || s.coverArt !== albumCoverArt)) {
+              const coverId = this.makeId('track', s.id);
+              coverUrl = `/media/cover/${coverId}?w=640&v=${encodeURIComponent(s.coverArt)}`;
+            }
+
             tracks.push({
               id: this.makeId('track', s.id),
               title: s.title || 'Lied',
               durationSec: Math.round(s.duration || 0),
               streamUrl: `/media/stream/${this.makeId('track', s.id)}`,
-              startOffsetSec: 0
+              startOffsetSec: 0,
+              ...(coverUrl ? { coverUrl } : {})
             });
           }
         }
@@ -198,15 +208,25 @@ export class NavidromeProvider implements ContentProvider {
         const res = await this.fetchFn(url);
         if (res.ok) {
           const json = await res.json();
-          const raw = json['subsonic-response']?.playlist?.entry || [];
+          const playlist = json['subsonic-response']?.playlist;
+          const plCoverArt = playlist?.coverArt;
+          const raw = playlist?.entry || [];
           const entries: any[] = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? [raw] : []);
           for (const e of entries) {
+            let coverUrl: string | undefined = undefined;
+            // Bei Playlists hat jeder Song in der Regel ein eigenes Album-/Track-CoverArt
+            if (e.coverArt && (!plCoverArt || e.coverArt !== plCoverArt)) {
+              const coverId = this.makeId('track', e.id);
+              coverUrl = `/media/cover/${coverId}?w=640&v=${encodeURIComponent(e.coverArt)}`;
+            }
+
             tracks.push({
               id: this.makeId('track', e.id),
               title: e.title || 'Lied',
               durationSec: Math.round(e.duration || 0),
               streamUrl: `/media/stream/${this.makeId('track', e.id)}`,
-              startOffsetSec: 0
+              startOffsetSec: 0,
+              ...(coverUrl ? { coverUrl } : {})
             });
           }
         }

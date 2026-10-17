@@ -147,6 +147,52 @@ describe('Navidrome Provider mit Fixtures (AGENTS.md Abschnitt 4.2)', () => {
     });
   });
 
+  it('listTracks weist track-spezifisches coverUrl zu, wenn coverArt abweicht', async () => {
+    const mockAlbumWithTrackCovers = {
+      'subsonic-response': {
+        status: 'ok',
+        version: '1.16.1',
+        album: {
+          id: 'alb-custom',
+          name: 'Sampler',
+          coverArt: 'cov-general-album',
+          song: [
+            {
+              id: 'song-standard',
+              title: 'Standard Song',
+              duration: 120,
+              coverArt: 'cov-general-album'
+            },
+            {
+              id: 'song-special',
+              title: 'Special Song mit eigenem Cover',
+              duration: 150,
+              coverArt: 'cov-special-track'
+            }
+          ]
+        }
+      }
+    };
+
+    const mockFetch = async () => {
+      return new Response(JSON.stringify(mockAlbumWithTrackCovers), { status: 200 });
+    };
+
+    const provider = new NavidromeProvider(
+      { baseUrl: 'http://navidrome.local:4533', user: 'kind', password: 'p' },
+      mockFetch as any
+    );
+
+    const tracks = await provider.listTracks('nd:album:alb-custom');
+    expect(tracks).toHaveLength(2);
+
+    // Track 1 hat kein abweichendes Cover -> coverUrl undefined
+    expect(tracks[0].coverUrl).toBeUndefined();
+
+    // Track 2 hat abweichendes Cover -> coverUrl gesetzt
+    expect(tracks[1].coverUrl).toBe('/media/cover/nd:track:song-special?w=640&v=cov-special-track');
+  });
+
   it('getProgress liefert immer null und saveProgress scrobbelt nicht (AGENTS.md Abschnitt 4.2)', async () => {
     let fetchCalled = false;
     const mockFetch = async () => {

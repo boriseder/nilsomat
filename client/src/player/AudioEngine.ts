@@ -407,7 +407,8 @@ class AudioEngine {
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
     if (!this.currentItem || !this.currentTrack) return;
 
-    const baseCover = this.currentItem.coverUrl.replace(/([?&])w=\d+/, '');
+    const coverToUse = this.currentTrack.coverUrl || this.currentItem.coverUrl;
+    const baseCover = coverToUse.replace(/([?&])w=\d+/, '');
     const sep = baseCover.includes('?') ? '&' : '?';
 
     navigator.mediaSession.metadata = new MediaMetadata({
