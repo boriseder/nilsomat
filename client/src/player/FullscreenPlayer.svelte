@@ -80,6 +80,13 @@
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
+  function cleanKidTitle(rawTitle: string): string {
+    if (!rawTitle) return '';
+    // Entferne überflüssige Klammerzusätze am Ende, z. B. (Bundesliga Anthem 2026/2027) oder [Remastered]
+    const cleaned = rawTitle.replace(/\s*(\([^)]*\)|\[[^\]]*\])\s*$/g, '').trim();
+    return cleaned.length > 0 ? cleaned : rawTitle;
+  }
+
   const timerOptions: SleepTimerDuration[] = [15, 30, 45, 60, null];
 </script>
 
@@ -102,7 +109,7 @@
           onclick={() => (showTracklist = !showTracklist)}
           aria-label={showTracklist ? strings.kid.actions.backToCover : tracklistButtonLabel}
         >
-          <Icon name={showTracklist ? 'back' : 'list'} size={26} />
+          <Icon name={showTracklist ? 'cover' : 'list'} size={26} />
           <span>{showTracklist ? strings.kid.actions.backToCover : tracklistButtonLabel}</span>
         </button>
       {/if}
@@ -125,7 +132,7 @@
     </div>
   </header>
 
-  <main class="player-body">
+  <main class="player-body" class:has-tracklist={showTracklist}>
     {#if showTracklist}
       <!-- Trackliste Ansicht (große, kinderfreundliche Zeilen) -->
       <div class="tracklist-container" role="region" aria-label="Titelauswahl">
@@ -135,14 +142,6 @@
               {effectiveTracks.length} {isBookOrPodcast ? strings.kid.actions.tracklistChapters : strings.kid.actions.tracklistSongs}
             </span>
           </div>
-          <button
-            type="button"
-            class="btn-return-cover"
-            onclick={() => (showTracklist = false)}
-          >
-            <Icon name="back" size={22} />
-            <span>{strings.kid.actions.backToCover}</span>
-          </button>
         </div>
 
         <div class="tracklist-scroll-view">
@@ -157,7 +156,7 @@
               <div class="track-row-left">
                 {#if isCurrent}
                   <div class="active-equalizer-pill" style="background: {glowColor};">
-                    <Icon name={isPlaying ? 'pause' : 'play'} size={24} color="#ffffff" />
+                    <Icon name={isPlaying ? 'pause' : 'play'} size={28} color="#ffffff" />
                   </div>
                 {:else if t.coverUrl}
                   <div class="track-cover-thumb">
@@ -176,7 +175,7 @@
               </div>
 
               <div class="track-row-info">
-                <span class="track-row-title">{t.title}</span>
+                <span class="track-row-title">{cleanKidTitle(t.title)}</span>
                 {#if t.durationSec}
                   <span class="track-row-duration">{formatTrackDuration(t.durationSec)}</span>
                 {/if}
@@ -184,12 +183,12 @@
 
               <div class="track-row-indicator">
                 {#if isCurrent}
-                  <span class="now-playing-badge" style="background: {glowColor}33; color: {glowColor}; border: 1px solid {glowColor}66;">
-                    {isPlaying ? strings.kid.actions.play : strings.kid.actions.pause}
-                  </span>
-                {:else}
-                  <div class="track-play-hint">
-                    <Icon name="play" size={22} color="rgba(255,255,255,0.4)" />
+                  <div
+                    class="now-playing-pill"
+                    style="background: {glowColor}33; color: {glowColor}; border: 1.5px solid {glowColor}88;"
+                  >
+                    <Icon name={isPlaying ? 'play' : 'pause'} size={20} color={glowColor} />
+                    <span>{isPlaying ? strings.kid.actions.play : strings.kid.actions.pause}</span>
                   </div>
                 {/if}
               </div>
@@ -221,26 +220,28 @@
       </div>
     {/if}
 
-    <!-- Kaugummi-Fortschrittsbalken mit mind. 48px Touch-Höhe -->
-    <div
-      class="progress-touch-area"
-      role="slider"
-      tabindex="0"
-      aria-label="Fortschritt"
-      aria-valuenow={Math.round(progressPercent)}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      onclick={handleSeek}
-      onkeydown={(e) => {
-        if (e.key === 'ArrowRight') audioEngine.forward30();
-        if (e.key === 'ArrowLeft') audioEngine.rewind30();
-      }}
-    >
-      <div class="progress-track">
-        <div class="progress-fill" style="width: {progressPercent}%"></div>
-        <div class="progress-thumb" style="left: {progressPercent}%"></div>
+    {#if !showTracklist}
+      <!-- Kaugummi-Fortschrittsbalken mit mind. 48px Touch-Höhe (nur auf Cover-Ansicht) -->
+      <div
+        class="progress-touch-area"
+        role="slider"
+        tabindex="0"
+        aria-label="Fortschritt"
+        aria-valuenow={Math.round(progressPercent)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        onclick={handleSeek}
+        onkeydown={(e) => {
+          if (e.key === 'ArrowRight') audioEngine.forward30();
+          if (e.key === 'ArrowLeft') audioEngine.rewind30();
+        }}
+      >
+        <div class="progress-track">
+          <div class="progress-fill" style="width: {progressPercent}%"></div>
+          <div class="progress-thumb" style="left: {progressPercent}%"></div>
+        </div>
       </div>
-    </div>
+    {/if}
 
     <!-- Steuerungsleiste -->
     <div class="controls-bar">
@@ -483,11 +484,11 @@
     width: 100%;
     flex: 1;
     min-height: 0;
-    max-height: 58vh;
+    max-height: none;
     display: flex;
     flex-direction: column;
-    margin-bottom: 12px;
-    background: rgba(15, 23, 42, 0.75);
+    margin-bottom: 16px;
+    background: rgba(15, 23, 42, 0.78);
     border: 1.5px solid rgba(255, 255, 255, 0.14);
     border-radius: 28px;
     backdrop-filter: blur(24px);
@@ -501,76 +502,52 @@
   .tracklist-top-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 14px 20px;
+    justify-content: flex-start;
+    padding: 16px 24px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(255, 255, 255, 0.04);
   }
 
   .tracklist-count-badge {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 800;
-    color: #94a3b8;
+    color: #cbd5e1;
     background: rgba(255, 255, 255, 0.08);
-    padding: 6px 18px;
+    padding: 8px 22px;
     border-radius: 9999px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-  }
-
-  .btn-return-cover {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1.5px solid rgba(255, 255, 255, 0.18);
-    color: var(--text-primary);
-    padding: 0 20px;
-    height: 48px;
-    border-radius: 9999px;
-    font-size: 18px;
-    font-weight: 800;
-    cursor: pointer;
-    transition: background 0.15s ease, transform 0.15s ease;
-  }
-
-  .btn-return-cover:hover {
-    background: rgba(255, 255, 255, 0.18);
-    transform: translateY(-1px);
-  }
-
-  .btn-return-cover:active {
-    transform: scale(0.96);
+    border: 1px solid rgba(255, 255, 255, 0.14);
   }
 
   .tracklist-scroll-view {
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 12px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 
   .tracklist-item-row {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 18px;
     width: 100%;
-    min-height: 74px;
-    padding: 12px 18px;
-    background: rgba(30, 41, 59, 0.65);
-    border: 1.5px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
+    min-height: 80px;
+    padding: 14px 20px;
+    background: rgba(30, 41, 59, 0.7);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
     color: var(--text-primary);
     text-align: left;
     cursor: pointer;
+    touch-action: manipulation;
     transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .tracklist-item-row:hover {
-    background: rgba(45, 60, 88, 0.85);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(45, 60, 88, 0.9);
+    border-color: rgba(255, 255, 255, 0.22);
     transform: translateY(-2px);
   }
 
@@ -579,9 +556,9 @@
   }
 
   .tracklist-item-row.is-active {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(96, 165, 250, 0.75);
-    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(96, 165, 250, 0.9);
+    box-shadow: 0 6px 24px rgba(59, 130, 246, 0.35);
   }
 
   .track-row-left {
@@ -589,36 +566,39 @@
   }
 
   .track-index-num {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 800;
-    color: #94a3b8;
+    color: #cbd5e1;
+    flex-shrink: 0;
   }
 
   .active-equalizer-pill {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    flex-shrink: 0;
+    animation: pulse-glow 2s infinite ease-in-out;
   }
 
   .track-cover-thumb {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
     flex-shrink: 0;
   }
 
@@ -632,9 +612,9 @@
 
   .track-row-title {
     font-size: 22px;
-    font-weight: 700;
-    color: #f8fafc;
-    line-height: 1.3;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.25;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -645,7 +625,7 @@
 
   .track-row-duration {
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     color: #94a3b8;
   }
 
@@ -655,23 +635,32 @@
     align-items: center;
   }
 
-  .now-playing-badge {
-    padding: 6px 14px;
+  .now-playing-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
     border-radius: 9999px;
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
   }
 
-  .track-play-hint {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.05);
+  @keyframes pulse-glow {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+    50% {
+      transform: scale(1.04);
+      box-shadow: 0 6px 22px rgba(255, 255, 255, 0.25);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .active-equalizer-pill {
+      animation: none;
+    }
   }
 
   .player-body {
@@ -680,13 +669,19 @@
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 32px 32px 32px;
+    padding: 8px 32px 28px 32px;
     max-width: 760px;
     margin: 0 auto;
     width: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     min-height: 0;
+  }
+
+  .player-body.has-tracklist {
+    max-width: 880px;
+    justify-content: flex-start;
+    overflow: hidden;
   }
 
   /* Cover mit Ambient Glow */

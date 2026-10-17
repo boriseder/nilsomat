@@ -16,7 +16,8 @@
       | 'close'
       | 'sparkle'
       | 'grid'
-      | 'list';
+      | 'list'
+      | 'cover';
     size?: number;
     color?: string;
   }
@@ -191,6 +192,11 @@
     <rect x="9.5" y="10.25" width="11.5" height="3.5" rx="1.75" fill="currentColor" />
     <rect x="3" y="16" width="4" height="3.5" rx="1.75" fill="currentColor" />
     <rect x="9.5" y="16" width="11.5" height="3.5" rx="1.75" fill="currentColor" />
+  {:else if name === 'cover'}
+    <!-- Modern picture / album cover icon -->
+    <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" stroke-width="2.2" />
+    <circle cx="8.5" cy="8.5" r="2" fill="currentColor" />
+    <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
   {/if}
 </svg>
 
