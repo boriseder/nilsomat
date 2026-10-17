@@ -219,6 +219,30 @@ describe('Audiobookshelf Provider mit Fixtures (AGENTS.md Abschnitt 4.1)', () =>
     expect(tracks[1].title).toBe('Warum ist der Himmel blau?');
   });
 
+  it('listTracksWithMeta respektiert limit und liefert hasMore/total', async () => {
+    const mockFetch = async () => new Response(JSON.stringify(podcastFixture), { status: 200 });
+    const provider = new AudiobookshelfProvider(
+      {
+        baseUrl: 'http://abs.local:13378',
+        podcastsLibraryId: 'lib-podcasts-2'
+      },
+      mockFetch as any
+    );
+
+    // Limit 1 bei 2 vorhandenen Episoden -> 1 geliefert, total 2, hasMore true
+    const page1 = await provider.listTracksWithMeta('abs:lib-podcasts-2:podcast-item-1', 1);
+    expect(page1.tracks).toHaveLength(1);
+    expect(page1.total).toBe(2);
+    expect(page1.hasMore).toBe(true);
+    expect(page1.tracks[0].title).toBe('Wie schlafen Fische?');
+
+    // Limit 2 bei 2 Episoden -> 2 geliefert, total 2, hasMore false
+    const page2 = await provider.listTracksWithMeta('abs:lib-podcasts-2:podcast-item-1', 2);
+    expect(page2.tracks).toHaveLength(2);
+    expect(page2.total).toBe(2);
+    expect(page2.hasMore).toBe(false);
+  });
+
   it('getProgress und saveProgress synchronisieren den Hörfortschritt', async () => {
     let savedBody: any = null;
 

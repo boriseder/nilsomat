@@ -129,20 +129,28 @@ kidRoutes.get('/tracks/:itemId', async (c) => {
 
   // Verborgene Items niemals ausliefern
   if (db.isItemHidden(itemId)) {
-    return c.json({ tracks: [] });
+    return c.json({ tracks: [], total: 0, hasMore: false });
   }
 
   const provider = getProviderForId(itemId);
   if (!provider) {
-    return c.json({ tracks: [] });
+    return c.json({ tracks: [], total: 0, hasMore: false });
   }
 
   try {
-    const tracks = await provider.listTracks(itemId);
-    return c.json({ tracks });
+    const limitQuery = c.req.query('limit');
+    const limit = limitQuery ? parseInt(limitQuery, 10) : undefined;
+
+    if (typeof provider.listTracksWithMeta === 'function') {
+      const meta = await provider.listTracksWithMeta(itemId, limit);
+      return c.json({ tracks: meta.tracks, total: meta.total, hasMore: meta.hasMore });
+    }
+
+    const tracks = await provider.listTracks(itemId, limit);
+    return c.json({ tracks, total: tracks.length, hasMore: false });
   } catch (err: any) {
     db.log('error', itemId.startsWith('nd:') ? 'navidrome' : 'abs', `Fehler beim Laden von Tracks (${itemId}): ${err?.message || err}`);
-    return c.json({ error: 'Fehler beim Laden der Inhalte', tracks: [] }, 502);
+    return c.json({ error: 'Fehler beim Laden der Inhalte', tracks: [], total: 0, hasMore: false }, 502);
   }
 });
 

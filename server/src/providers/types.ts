@@ -32,7 +32,7 @@ export interface Track {        // spielbare Einheit (Kapitel, Episode, Lied)
 
 export interface ContentProvider {
   listItems(section: Section): Promise<Item[]>;
-  listTracks(itemId: string): Promise<Track[]>;       // Podcast: Episoden
+  listTracks(itemId: string, limit?: number): Promise<Track[]>;       // Podcast: Episoden
   getProgress(itemId: string): Promise<Item['progress'] | null>;
   saveProgress(
     itemId: string,
@@ -41,4 +41,8 @@ export interface ContentProvider {
     durationSec?: number
   ): Promise<void>;
   listSeriesBooks?(seriesId: string): Promise<Item[]>; // Bücher einer Serie
+  listTracksWithMeta?(
+    itemId: string,
+    limit?: number
+  ): Promise<{ tracks: Track[]; total: number; hasMore: boolean }>;
 }

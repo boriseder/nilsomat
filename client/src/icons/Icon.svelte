@@ -17,7 +17,8 @@
       | 'sparkle'
       | 'grid'
       | 'list'
-      | 'cover';
+      | 'cover'
+      | 'plus';
     size?: number;
     color?: string;
   }
@@ -197,6 +198,15 @@
     <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" stroke-width="2.2" />
     <circle cx="8.5" cy="8.5" r="2" fill="currentColor" />
     <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+  {:else if name === 'plus'}
+    <!-- Modern rounded plus icon -->
+    <path
+      d="M12 5v14M5 12h14"
+      stroke="currentColor"
+      stroke-width="3"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
   {/if}
 </svg>
 

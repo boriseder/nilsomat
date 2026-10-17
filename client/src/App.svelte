@@ -20,6 +20,9 @@
   let activeSections = $state<Section[]>(['books', 'podcasts', 'music']);
   let items = $state<Item[]>([]);
   let tracks = $state<Track[]>([]);
+  let podcastEpisodesLimit = $state(30);
+  let hasMoreEpisodes = $state(false);
+  let loadingMoreEpisodes = $state(false);
   let recentItems = $state<Item[]>([]);
   let loading = $state(false);
   let hasError = $state(false);
@@ -113,11 +116,13 @@
       loading = true;
       hasError = false;
       currentView = 'episodes';
+      podcastEpisodesLimit = 30;
       try {
-        const res = await fetch(`/api/kid/tracks/${encodeURIComponent(item.id)}`);
+        const res = await fetch(`/api/kid/tracks/${encodeURIComponent(item.id)}?limit=30`);
         if (!res.ok) throw new Error();
         const data = await res.json();
         tracks = data.tracks || [];
+        hasMoreEpisodes = !!data.hasMore;
         loading = false;
       } catch {
         loading = false;
@@ -167,6 +172,26 @@
     const index = allTracks.findIndex((t) => t.id === track.id);
     await audioEngine.playItem(selectedItem, allTracks, Math.max(0, index));
     showFullscreenPlayer = true;
+  }
+
+  async function handleLoadMoreEpisodes(): Promise<void> {
+    if (!selectedItem || loadingMoreEpisodes || !hasMoreEpisodes) return;
+    loadingMoreEpisodes = true;
+    try {
+      const nextLimit = podcastEpisodesLimit + 30;
+      const res = await fetch(
+        `/api/kid/tracks/${encodeURIComponent(selectedItem.id)}?limit=${nextLimit}`
+      );
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      tracks = data.tracks || [];
+      hasMoreEpisodes = !!data.hasMore;
+      podcastEpisodesLimit = nextLimit;
+    } catch {
+      // Kind bleibt auf der aktuellen Liste
+    } finally {
+      loadingMoreEpisodes = false;
+    }
   }
 
   function handleBackToHome(): void {
@@ -250,6 +275,9 @@
     <EpisodeList
       podcast={selectedItem}
       {tracks}
+      hasMore={hasMoreEpisodes}
+      loadingMore={loadingMoreEpisodes}
+      onLoadMore={handleLoadMoreEpisodes}
       onBack={handleBackToGrid}
       onPlayTrack={handlePlayTrack}
     />

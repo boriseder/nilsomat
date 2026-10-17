@@ -22,7 +22,8 @@ export const strings = {
       retry: 'Nochmal versuchen',
       tracklistChapters: 'Kapitel',
       tracklistSongs: 'Lieder',
-      backToCover: 'Zum Cover'
+      backToCover: 'Zum Cover',
+      loadMoreEpisodes: 'Mehr Folgen zeigen'
     },
     status: {
       loading: 'Lädt...',

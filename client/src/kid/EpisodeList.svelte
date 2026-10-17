@@ -7,11 +7,22 @@
   interface Props {
     podcast: Item;
     tracks: Track[];
+    hasMore?: boolean;
+    loadingMore?: boolean;
+    onLoadMore?: () => void;
     onBack: () => void;
     onPlayTrack: (track: Track, allTracks: Track[]) => void;
   }
 
-  const { podcast, tracks, onBack, onPlayTrack }: Props = $props();
+  const {
+    podcast,
+    tracks,
+    hasMore = false,
+    loadingMore = false,
+    onLoadMore,
+    onBack,
+    onPlayTrack
+  }: Props = $props();
 
   function formatDuration(sec: number): string {
     if (!sec) return '';
@@ -64,6 +75,25 @@
           </div>
         </button>
       {/each}
+
+      {#if hasMore}
+        <div class="load-more-row">
+          <button
+            type="button"
+            class="btn-load-more"
+            disabled={loadingMore}
+            onclick={onLoadMore}
+          >
+            {#if loadingMore}
+              <Icon name="reload" size={30} />
+              <span>{strings.kid.status.loading}</span>
+            {:else}
+              <Icon name="plus" size={30} />
+              <span>{strings.kid.actions.loadMoreEpisodes}</span>
+            {/if}
+          </button>
+        </div>
+      {/if}
     </div>
   </main>
 </div>
@@ -233,5 +263,47 @@
 
   .episode-row:hover .row-play-badge {
     transform: scale(1.08);
+  }
+
+  .load-more-row {
+    display: flex;
+    justify-content: center;
+    padding-top: 14px;
+    padding-bottom: 24px;
+  }
+
+  .btn-load-more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    width: 100%;
+    min-height: 80px;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.88) 0%, rgba(30, 58, 138, 0.95) 100%);
+    border: 2px solid rgba(255, 255, 255, 0.22);
+    border-radius: 28px;
+    color: #ffffff;
+    font-size: var(--font-size-base);
+    font-weight: 800;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, border-color 0.15s ease, box-shadow 0.18s ease;
+  }
+
+  .btn-load-more:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.95) 0%, rgba(37, 99, 235, 1) 100%);
+    border-color: rgba(255, 255, 255, 0.35);
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.5);
+  }
+
+  .btn-load-more:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .btn-load-more:disabled {
+    opacity: 0.7;
+    cursor: default;
   }
 </style>

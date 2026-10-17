@@ -101,16 +101,15 @@
     </button>
 
     <div class="player-header-actions">
-      {#if effectiveTracks.length > 1}
+      {#if effectiveTracks.length > 1 && !showTracklist}
         <button
           type="button"
           class="btn-tracklist"
-          class:active={showTracklist}
-          onclick={() => (showTracklist = !showTracklist)}
-          aria-label={showTracklist ? strings.kid.actions.backToCover : tracklistButtonLabel}
+          onclick={() => (showTracklist = true)}
+          aria-label={tracklistButtonLabel}
         >
-          <Icon name={showTracklist ? 'cover' : 'list'} size={26} />
-          <span>{showTracklist ? strings.kid.actions.backToCover : tracklistButtonLabel}</span>
+          <Icon name="list" size={26} />
+          <span>{tracklistButtonLabel}</span>
         </button>
       {/if}
 
@@ -142,6 +141,16 @@
               {effectiveTracks.length} {isBookOrPodcast ? strings.kid.actions.tracklistChapters : strings.kid.actions.tracklistSongs}
             </span>
           </div>
+
+          <button
+            type="button"
+            class="btn-back-to-cover"
+            onclick={() => (showTracklist = false)}
+            aria-label={strings.kid.actions.backToCover}
+          >
+            <Icon name="cover" size={26} />
+            <span>{strings.kid.actions.backToCover}</span>
+          </button>
         </div>
 
         <div class="tracklist-scroll-view">
@@ -470,15 +479,6 @@
     transform: scale(0.95);
   }
 
-  .btn-tracklist.active {
-    background: rgba(99, 102, 241, 0.28);
-    border-color: rgba(129, 140, 248, 0.7);
-    color: #a5b4fc;
-    box-shadow:
-      0 8px 24px rgba(99, 102, 241, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  }
-
   /* Trackliste Container & Rows */
   .tracklist-container {
     width: 100%;
@@ -502,7 +502,8 @@
   .tracklist-top-bar {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
+    gap: 16px;
     padding: 16px 24px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(255, 255, 255, 0.04);
@@ -516,6 +517,36 @@
     padding: 8px 22px;
     border-radius: 9999px;
     border: 1px solid rgba(255, 255, 255, 0.14);
+  }
+
+  .btn-back-to-cover {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(30, 41, 59, 0.85);
+    border: 1.5px solid rgba(255, 255, 255, 0.22);
+    color: var(--text-primary);
+    padding: 0 24px;
+    min-height: var(--touch-min-size);
+    border-radius: 9999px;
+    font-size: var(--font-size-base);
+    font-weight: 800;
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .btn-back-to-cover:hover {
+    background: rgba(45, 60, 88, 0.95);
+    border-color: rgba(255, 255, 255, 0.35);
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  .btn-back-to-cover:active {
+    transform: scale(0.96);
   }
 
   .tracklist-scroll-view {

@@ -390,15 +390,18 @@ export class AudiobookshelfProvider implements ContentProvider {
     }
   }
 
-  async listTracks(itemId: string): Promise<Track[]> {
+  async listTracksWithMeta(
+    itemId: string,
+    limit?: number
+  ): Promise<{ tracks: Track[]; total: number; hasMore: boolean }> {
     const parsed = this.parseId(itemId);
-    if (!parsed) return [];
+    if (!parsed) return { tracks: [], total: 0, hasMore: false };
 
     try {
       const res = await this.authenticatedFetch(
         `${this.config.baseUrl}/api/items/${parsed.itemId}?expanded=1`
       );
-      if (!res.ok) return [];
+      if (!res.ok) return { tracks: [], total: 0, hasMore: false };
 
       const item = await res.json();
       const tracks: Track[] = [];
@@ -421,7 +424,7 @@ export class AudiobookshelfProvider implements ContentProvider {
         rawEpisodes.length > 0;
 
       if (isPodcast) {
-        // Podcast: Episoden nach Veröffentlichung absteigend sortiert, max 30
+        // Podcast: Episoden nach Veröffentlichung absteigend sortiert, max 30 standardmäßig
         const parseTimestamp = (val: any) => {
           if (!val) return 0;
           if (typeof val === 'number') return val;
@@ -435,7 +438,8 @@ export class AudiobookshelfProvider implements ContentProvider {
           return timeB - timeA;
         });
 
-        const limited = rawEpisodes.slice(0, 30);
+        const effectiveLimit = limit && limit > 0 ? limit : 30;
+        const limited = rawEpisodes.slice(0, effectiveLimit);
         limited.forEach((ep) => {
           const fileId = ep.audioFile?.ino || ep.audioFile?.id || ep.id;
           const trackId = this.makeTrackId(parsed.libraryId, parsed.itemId, `ep_${ep.id}`);
@@ -449,6 +453,12 @@ export class AudiobookshelfProvider implements ContentProvider {
             streamUrl: `/media/stream/abs:${streamId}`
           });
         });
+
+        return {
+          tracks,
+          total: rawEpisodes.length,
+          hasMore: rawEpisodes.length > limited.length
+        };
       } else {
         // Buch: Kapitel oder Audiodateien normalisieren (AGENTS.md Abschnitt 4.1)
         const chapters: any[] = item.media?.chapters || [];
@@ -509,12 +519,21 @@ export class AudiobookshelfProvider implements ContentProvider {
             streamUrl: `/media/stream/abs:${streamId}`
           });
         }
-      }
 
-      return tracks;
+        return {
+          tracks,
+          total: tracks.length,
+          hasMore: false
+        };
+      }
     } catch {
-      return [];
+      return { tracks: [], total: 0, hasMore: false };
     }
+  }
+
+  async listTracks(itemId: string, limit?: number): Promise<Track[]> {
+    const meta = await this.listTracksWithMeta(itemId, limit);
+    return meta.tracks;
   }
 
   async getProgress(itemId: string): Promise<ItemProgress | null> {
