@@ -20,6 +20,7 @@ services:
       - TZ=Europe/Berlin
       - PORT=8080
       - COVER_CACHE_MAX_MB=2048
+      - DATA_DIR=/data
       - NODE_ENV=production
 
 networks:

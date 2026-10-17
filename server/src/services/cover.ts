@@ -24,7 +24,7 @@ export class CoverService {
   private maxCacheBytes: number;
 
   constructor(cacheDir?: string, maxCacheMb?: number) {
-    const baseDir = cacheDir || process.env.DATA_DIR || './data';
+    const baseDir = cacheDir || process.env.DATA_DIR || (fs.existsSync('/data') ? '/data' : './data');
     this.cacheDir = path.resolve(baseDir, 'cache/covers');
     const mb = maxCacheMb || Number(process.env.COVER_CACHE_MAX_MB) || 2048;
     this.maxCacheBytes = mb * 1024 * 1024;

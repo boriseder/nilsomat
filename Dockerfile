@@ -33,6 +33,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV DATA_DIR=/data
 
 # Verzeichnis für sqlite / persistenten Zustand vorbereiten
 RUN mkdir -p /data && chown -R node:node /data
