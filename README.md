@@ -1,4 +1,4 @@
-# Hörbox ("Kinder-Audio-App")
+# Nils-o-mat ("Kinder-Audio-App")
 
 Eine eigenständige Progressive Web App (PWA) für das iPad eines 7-jährigen Kindes zum Abspielen von Hörbüchern, Podcasts (via Audiobookshelf) und Musik (via Navidrome).
 
@@ -45,7 +45,7 @@ In Caddy den bereitgestellten Snippet (`deploy/Caddyfile.snippet`) einbinden:
 ```caddy
 kids.boriseder.com {
     encode zstd gzip
-    reverse_proxy hoerbox:8080
+    reverse_proxy nilsomat:8080
 }
 ```
 *Hinweis:* Caddy komprimiert standardmäßig nur Text- und HTML-Dateien; Audio-Streams und Bilddaten laufen unkomprimiert mit intakter Range-Unterstützung durch.
@@ -93,11 +93,11 @@ docker compose up -d
 3. **Geführten Zugriff aktivieren (Kindersicherung):**
    - Auf dem iPad unter *Einstellungen -> Bedienungshilfen -> Geführter Zugriff* einschalten.
    - Einen Code für den geführten Zugriff festlegen.
-   - Die Hörbox-App öffnen.
+   - Die Nils-o-mat-App öffnen.
    - **Dreimal die Home- bzw. Power-Taste drücken**, um den geführten Zugriff zu starten.
    - Dadurch kann das Kind die App nicht durch Wischgesten oder Tastendruck verlassen.
 4. **Elternbereich später öffnen:**
-   - Auf der Startseite der Hörbox für **3 Sekunden das Radio-Logo oben gedrückt halten**.
+   - Auf der Startseite von Nils-o-mat für **3 Sekunden das Logo oben gedrückt halten**.
    - Die Eltern-PIN auf dem Ziffernblock eingeben.
 
 ---

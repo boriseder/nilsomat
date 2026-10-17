@@ -2,7 +2,7 @@ import type { Context, MiddlewareHandler } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { getDB } from '../db.js';
 
-export const SESSION_COOKIE_NAME = 'hoerbox_session';
+export const SESSION_COOKIE_NAME = 'nilsomat_session';
 
 export interface AuthState {
   hasPin: boolean;

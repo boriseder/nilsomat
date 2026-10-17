@@ -54,7 +54,7 @@ export class NavidromeProvider implements ContentProvider {
     params.set('s', salt);
     params.set('t', token);
     params.set('v', '1.16.1');
-    params.set('c', 'hoerbox');
+    params.set('c', 'nilsomat');
     params.set('f', 'json');
 
     return params;

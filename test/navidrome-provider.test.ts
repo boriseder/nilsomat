@@ -36,7 +36,7 @@ describe('Navidrome Provider mit Fixtures (AGENTS.md Abschnitt 4.2)', () => {
     expect(params1.get('s')).not.toBe(params2.get('s'));
     expect(params1.get('u')).toBe('kind');
     expect(params1.get('v')).toBe('1.16.1');
-    expect(params1.get('c')).toBe('hoerbox');
+    expect(params1.get('c')).toBe('nilsomat');
     expect(params1.get('f')).toBe('json');
 
     // Token-Berechnung verifizieren: MD5(password + salt)

@@ -56,7 +56,7 @@ if (clientDistPath) {
 const port = Number(process.env.PORT) || 8080;
 
 if (process.env.NODE_ENV !== 'test') {
-  console.log(JSON.stringify({ level: 'info', message: `Nilsomat BFF running on port ${port}` }));
+  console.log(JSON.stringify({ level: 'info', message: `Nils-o-mat BFF running on port ${port}` }));
   serve({
     fetch: app.fetch,
     port

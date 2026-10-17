@@ -308,7 +308,7 @@ Pflichttests (mindestens):
 - **Domain:** `kids.boriseder.com` (Split-DNS), davor läuft Caddy. Die Domain ist von außen nicht erreichbar, ein Zertifikat funktioniert daher nur über die **DNS-01-Challenge** (liegt in der Verantwortung des Menschen, nicht dieses Repos).
 - **Dockerfile:** Multi-Stage (Build → schlankes Runtime-Image), `sharp` muss im Zielimage funktionieren (testen), **non-root User**, `HEALTHCHECK` auf `/healthz`.
 - **docker-compose.yml:**
-  - Service und Container-Name `hoerbox`, interner Port `8080`.
+  - Service und Container-Name `nilsomat`, interner Port `8080`.
   - **Kein `ports:`-Mapping.** Der Container hängt nur im Docker-Netzwerk von Caddy (externes Netzwerk, Name als Platzhalter `proxy`, im README dokumentiert).
   - Volume `./data:/data`, `restart: unless-stopped`, `read_only: true` mit Schreibzugriff nur auf `/data` und `/tmp`.
   - Umgebungsvariablen: `APP_SECRET` (Pflicht, Start bricht ohne ab), `TRUSTED_PROXY=true`, `TZ=Europe/Berlin` (wichtig für das Tageslimit um Mitternacht), `PORT=8080`, `COVER_CACHE_MAX_MB=2048`.
@@ -316,14 +316,14 @@ Pflichttests (mindestens):
   ```
   kids.boriseder.com {
   	encode zstd gzip
-  	reverse_proxy hoerbox:8080
+  	reverse_proxy nilsomat:8080
   }
   ```
   Kein `encode` auf Audio erzwingen. Das Caddy-Default verhält sich hier korrekt (komprimiert nur textbasierte Typen). Range-Requests laufen unverändert durch.
 - **Endpunkt `/healthz`:** liefert 200 ohne Details (keine Versions- oder Dienstinfos nach außen).
 - **Backup:** nur `/data/config.sqlite` ist sicherungswürdig. Der Cover-Cache ist regenerierbar.
 - **Logging:** JSON auf stdout, ohne Secrets.
-- **Releases:** versionierte Images (`hoerbox:<semver>`), kein Auto-Update.
+- **Releases:** versionierte Images (`nilsomat:<semver>`), kein Auto-Update.
 
 ---
 

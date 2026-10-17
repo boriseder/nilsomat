@@ -51,8 +51,8 @@ export class DB {
     this.db = new Database(finalPath);
     this.db.pragma('journal_mode = WAL');
 
-    const appSecret = process.env.APP_SECRET || 'hoerbox-dev-fallback-secret-at-least-32-chars-long!';
-    this.encryptionKey = crypto.scryptSync(appSecret, 'hoerbox-secrets-salt-2026', 32);
+    const appSecret = process.env.APP_SECRET || 'nilsomat-dev-fallback-secret-at-least-32-chars-long!';
+    this.encryptionKey = crypto.scryptSync(appSecret, 'nilsomat-secrets-salt-2026', 32);
 
     this.initTables();
   }

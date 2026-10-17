@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       manifest: {
-        name: 'Nilsomat',
-        short_name: 'Nilsomat',
+        name: 'Nils-o-mat',
+        short_name: 'Nils-o-mat',
         description: 'Kinder-Audio-App für Hörbücher, Podcasts und Musik',
         theme_color: '#1e1b4b',
         background_color: '#0f172a',
@@ -37,7 +37,7 @@ export default defineConfig({
             urlPattern: /\/media\/cover\/.*/,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'hoerbox-covers',
+              cacheName: 'nilsomat-covers',
               expiration: {
                 maxEntries: 400,
                 maxAgeSeconds: 30 * 24 * 60 * 60 // 30 Tage

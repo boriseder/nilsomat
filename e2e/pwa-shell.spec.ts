@@ -5,11 +5,11 @@ test.describe('Hörbox PWA-Shell auf iPad WebKit', () => {
     await page.goto('/');
 
     // Titel prüfen
-    await expect(page).toHaveTitle('Nilsomat');
+    await expect(page).toHaveTitle('Nils-o-mat');
 
     // Überschrift
     const title = page.locator('.app-title');
-    await expect(title).toHaveText('Nilsomat');
+    await expect(title).toHaveText('Nils-o-mat');
 
     // 3 Kacheln prüfen
     const booksTile = page.locator('.tile-books');

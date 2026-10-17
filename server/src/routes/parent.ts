@@ -204,7 +204,7 @@ parentRoutes.post('/test-navidrome', async (c) => {
   try {
     const salt = crypto.randomBytes(8).toString('hex');
     const token = crypto.createHash('md5').update(`${password}${salt}`).digest('hex');
-    const testUrl = `${baseUrl}/rest/ping.view?u=${encodeURIComponent(user)}&t=${token}&s=${salt}&v=1.16.1&c=hoerbox&f=json`;
+    const testUrl = `${baseUrl}/rest/ping.view?u=${encodeURIComponent(user)}&t=${token}&s=${salt}&v=1.16.1&c=nilsomat&f=json`;
 
     const res = await fetch(testUrl);
     if (!res.ok) {

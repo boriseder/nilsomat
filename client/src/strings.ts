@@ -4,7 +4,7 @@
 
 export const strings = {
   kid: {
-    appName: 'Nilsomat',
+    appName: 'Nils-o-mat',
     sections: {
       books: 'Hörbücher',
       podcasts: 'Podcasts',

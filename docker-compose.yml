@@ -1,10 +1,10 @@
 services:
-  hoerbox:
+  nilsomat:
     build:
       context: .
       dockerfile: Dockerfile
-    image: hoerbox:latest
-    container_name: hoerbox
+    image: nilsomat:latest
+    container_name: nilsomat
     restart: unless-stopped
     read_only: true
     user: "node"

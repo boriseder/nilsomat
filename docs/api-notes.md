@@ -44,7 +44,7 @@ Dieses Dokument sammelt verbindliche Erkenntnisse, Endpunkt-Spezifikationen und 
     `{ "subsonic-response": { "status": "ok", "version": "1.16.1", ... } }`
   - Fehler: `{ "subsonic-response": { "status": "failed", "error": { "code": 10, "message": "Required parameter is missing" } } }`
 - **Authentifizierung (Salt + Token):**
-  - Parameter: `u=<user>`, `s=<hex-salt>`, `t=<md5(password + salt)>`, `v=1.16.1`, `c=hoerbox`, `f=json`.
+  - Parameter: `u=<user>`, `s=<hex-salt>`, `t=<md5(password + salt)>`, `v=1.16.1`, `c=nilsomat`, `f=json`.
   - Pro Request wird ein neuer kryptografischer Salt `s` (z. B. 16 Hex-Zeichen) generiert und `t = MD5(password + s)` berechnet.
   - Niemals Klartextpasswörter im Query-String!
 - **Alben (`getAlbumList2.view`):**

@@ -1,4 +1,4 @@
-# Multi-Stage Dockerfile für Hörbox (Node 22 LTS)
+# Multi-Stage Dockerfile für Nils-o-mat (Node 22 LTS)
 # Stage 1: Build
 FROM node:22-bookworm-slim AS builder
 
