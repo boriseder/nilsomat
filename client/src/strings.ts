@@ -77,7 +77,10 @@ export const strings = {
     connections: {
       absTitle: 'Audiobookshelf (Hörbücher & Podcasts)',
       absUrl: 'Server-Adresse (URL)',
-      absToken: 'Kind-Benutzer Token',
+      absUser: 'Benutzername (empfohlen)',
+      absPassword: 'Passwort',
+      absToken: 'API-Token (optional)',
+      absTokenToggle: 'Alternativ mit API-Token verbinden',
       navidromeTitle: 'Navidrome (Musik)',
       navidromeUrl: 'Server-Adresse (URL)',
       navidromeUser: 'Benutzername',

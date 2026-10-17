@@ -94,6 +94,8 @@ parentRoutes.get('/config', (c) => {
 
   return c.json({
     absUrl: cfg.absUrl || '',
+    absUsername: cfg.absUsername || '',
+    hasAbsPassword: !!cfg.absPassword,
     hasAbsToken: !!cfg.absToken,
     absBooksLibId: cfg.absBooksLibId || '',
     absPodcastsLibId: cfg.absPodcastsLibId || '',
@@ -130,6 +132,8 @@ parentRoutes.post('/config', async (c) => {
 
   const updates: Record<string, any> = {};
   if (body.absUrl !== undefined) updates.absUrl = body.absUrl;
+  if (body.absUsername !== undefined) updates.absUsername = body.absUsername;
+  if (body.absPassword !== undefined && body.absPassword !== '') updates.absPassword = body.absPassword;
   if (body.absToken !== undefined && body.absToken !== '') updates.absToken = body.absToken;
   if (body.absBooksLibId !== undefined) updates.absBooksLibId = body.absBooksLibId;
   if (body.absPodcastsLibId !== undefined) updates.absPodcastsLibId = body.absPodcastsLibId;
@@ -153,10 +157,43 @@ parentRoutes.post('/test-abs', async (c) => {
   const cfg = db.getConfig();
 
   const baseUrl = (body.url || cfg.absUrl || '').replace(/\/+$/, '');
-  const token = body.token || cfg.absToken || '';
+  let token = body.token || cfg.absToken || '';
+  const username = body.username || cfg.absUsername || '';
+  const password = body.password || cfg.absPassword || '';
 
   if (!baseUrl) {
     return c.json({ ok: false, error: 'Keine ABS-URL angegeben' });
+  }
+
+  // Wenn Benutzername und Passwort angegeben sind: Login durchführen
+  if (username && password) {
+    try {
+      const loginRes = await fetch(`${baseUrl}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      if (!loginRes.ok) {
+        let msg = loginRes.status === 401 ? 'Falscher Benutzername oder Passwort' : `Login fehlgeschlagen (${loginRes.status})`;
+        try {
+          const errJson = await loginRes.json();
+          if (errJson.error) msg = errJson.error;
+        } catch {}
+        db.log('warn', 'abs', `Login fehlgeschlagen: ${msg}`);
+        return c.json({ ok: false, error: msg });
+      }
+
+      const loginData = await loginRes.json();
+      token = loginData.user?.token || token;
+    } catch (err: any) {
+      db.log('error', 'abs', `Login Fehler: ${err?.message || err}`);
+      return c.json({ ok: false, error: 'ABS nicht erreichbar' });
+    }
+  }
+
+  if (!token) {
+    return c.json({ ok: false, error: 'Weder Zugangsdaten noch Token angegeben' });
   }
 
   try {
@@ -167,7 +204,7 @@ parentRoutes.post('/test-abs', async (c) => {
     });
 
     if (!res.ok) {
-      const statusText = res.status === 401 ? 'Ungültiges Token' : `Server antwortete mit Code ${res.status}`;
+      const statusText = res.status === 401 ? 'Ungültiges Token / Nicht autorisiert' : `Server antwortete mit Code ${res.status}`;
       db.log('warn', 'abs', `Verbindungstest fehlgeschlagen: ${statusText}`);
       return c.json({ ok: false, error: statusText });
     }
@@ -180,7 +217,7 @@ parentRoutes.post('/test-abs', async (c) => {
     }));
 
     db.log('info', 'abs', `Verbindungstest erfolgreich (${libraries.length} Bibliotheken gefunden)`);
-    return c.json({ ok: true, libraries });
+    return c.json({ ok: true, libraries, token });
   } catch (err: any) {
     db.log('error', 'abs', `Verbindungstest Fehler: ${err?.message || err}`);
     return c.json({ ok: false, error: 'ABS nicht erreichbar' });
@@ -310,7 +347,7 @@ parentRoutes.get('/status', (c) => {
   return c.json({
     status: 'ok',
     configured: db.hasPin(),
-    hasAbs: !!(cfg.absUrl && cfg.absToken),
+    hasAbs: !!(cfg.absUrl && (cfg.absToken || (cfg.absUsername && cfg.absPassword))),
     hasNavidrome: !!(cfg.navidromeUrl && cfg.navidromeUser),
     dailyLimitMinutes: cfg.dailyLimitMinutes || 0,
     listenedTodayMinutes: Math.round(usageSec / 60),

@@ -8,3 +8,6 @@ coverage/
 playwright-report/
 test-results/
 .svelte-kit/
+.env
+.env.*
+*.key

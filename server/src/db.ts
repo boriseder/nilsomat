@@ -6,6 +6,8 @@ import Database from 'better-sqlite3';
 export interface AppConfig {
   absUrl?: string;
   absToken?: string;
+  absUsername?: string;
+  absPassword?: string;
   absBooksLibId?: string;
   absPodcastsLibId?: string;
   navidromeUrl?: string;
@@ -25,7 +27,7 @@ export interface StatusLog {
 
 export class DB {
   private db: Database.Database;
-  private encryptionKey: Buffer;
+  private encryptionKey!: Buffer;
 
   constructor(dbPath?: string) {
     let finalPath = dbPath || process.env.DB_PATH;
@@ -43,16 +45,45 @@ export class DB {
       }
     }
 
-    const dir = path.dirname(finalPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    const isMemory = finalPath === ':memory:';
+    if (!isMemory) {
+      const dir = path.dirname(finalPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
     }
 
     this.db = new Database(finalPath);
     this.db.pragma('journal_mode = WAL');
 
-    const appSecret = process.env.APP_SECRET || 'nilsomat-dev-fallback-secret-at-least-32-chars-long!';
-    this.encryptionKey = crypto.scryptSync(appSecret, 'nilsomat-secrets-salt-2026', 32);
+    // Persistenter Schlüssel in <dir>/secret.key für unzerstörbare Entschlüsselung (nur wenn nicht :memory:)
+    if (!isMemory) {
+      const dir = path.dirname(finalPath);
+      const keyFile = path.resolve(dir, 'secret.key');
+      if (fs.existsSync(keyFile)) {
+        try {
+          const loadedKey = fs.readFileSync(keyFile);
+          if (loadedKey.length === 32) {
+            this.encryptionKey = loadedKey;
+          }
+        } catch {
+          // Fallback
+        }
+      }
+
+      if (!this.encryptionKey) {
+        const appSecret = process.env.APP_SECRET || 'nilsomat-dev-fallback-secret-at-least-32-chars-long!';
+        this.encryptionKey = crypto.scryptSync(appSecret, 'nilsomat-secrets-salt-2026', 32);
+        try {
+          fs.writeFileSync(keyFile, this.encryptionKey, { mode: 0o600 });
+        } catch {
+          // Ignorieren falls Dateisystem schreibgeschützt
+        }
+      }
+    } else {
+      const appSecret = process.env.APP_SECRET || 'nilsomat-dev-fallback-secret-at-least-32-chars-long!';
+      this.encryptionKey = crypto.scryptSync(appSecret, 'nilsomat-secrets-salt-2026', 32);
+    }
 
     this.initTables();
   }
@@ -243,6 +274,8 @@ export class DB {
     return {
       absUrl: map.get('abs_url'),
       absToken: this.decrypt(map.get('abs_token_enc') || ''),
+      absUsername: map.get('abs_username'),
+      absPassword: this.decrypt(map.get('abs_password_enc') || ''),
       absBooksLibId: map.get('abs_books_lib_id'),
       absPodcastsLibId: map.get('abs_podcasts_lib_id'),
       navidromeUrl: map.get('navidrome_url'),
@@ -258,6 +291,8 @@ export class DB {
     const txn = this.db.transaction(() => {
       if (config.absUrl !== undefined) stmt.run('abs_url', config.absUrl);
       if (config.absToken !== undefined) stmt.run('abs_token_enc', this.encrypt(config.absToken));
+      if (config.absUsername !== undefined) stmt.run('abs_username', config.absUsername);
+      if (config.absPassword !== undefined) stmt.run('abs_password_enc', this.encrypt(config.absPassword));
       if (config.absBooksLibId !== undefined) stmt.run('abs_books_lib_id', config.absBooksLibId);
       if (config.absPodcastsLibId !== undefined) stmt.run('abs_podcasts_lib_id', config.absPodcastsLibId);
       if (config.navidromeUrl !== undefined) stmt.run('navidrome_url', config.navidromeUrl);

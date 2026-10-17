@@ -3,6 +3,8 @@ import type { ContentProvider, Item, ItemProgress, Section, Track } from './type
 export interface ABSConfig {
   baseUrl: string;
   token?: string;
+  username?: string;
+  password?: string;
   booksLibraryId?: string;
   podcastsLibraryId?: string;
 }
@@ -17,6 +19,76 @@ export class AudiobookshelfProvider implements ContentProvider {
       baseUrl: config.baseUrl.replace(/\/+$/, '')
     };
     this.fetchFn = customFetch || fetch;
+  }
+
+  public async login(user?: string, pass?: string): Promise<{ ok: boolean; token?: string; error?: string }> {
+    const u = user || this.config.username;
+    const p = pass || this.config.password;
+    if (!u || !p) {
+      return { ok: false, error: 'Kein Benutzername oder Passwort angegeben' };
+    }
+
+    try {
+      const res = await this.fetchFn(`${this.config.baseUrl}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p })
+      });
+
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try {
+          const errJson = await res.json();
+          if (errJson.error) msg = errJson.error;
+        } catch {}
+        return { ok: false, error: msg };
+      }
+
+      const data = await res.json();
+      const token = data.user?.token;
+      if (!token) {
+        return { ok: false, error: 'Kein Token in der Antwort erhalten' };
+      }
+
+      this.config.token = token;
+      if (user) this.config.username = user;
+      if (pass) this.config.password = pass;
+      return { ok: true, token };
+    } catch (err: any) {
+      return { ok: false, error: err.message || String(err) };
+    }
+  }
+
+  public async ensureToken(): Promise<string | undefined> {
+    if (!this.config.token && this.config.username && this.config.password) {
+      await this.login();
+    }
+    return this.config.token;
+  }
+
+  public async authenticatedFetch(url: string, init?: RequestInit): Promise<Response> {
+    await this.ensureToken();
+
+    let headers: Record<string, string> = {
+      ...this.authHeaders,
+      ...((init?.headers as Record<string, string>) || {})
+    };
+
+    let res = await this.fetchFn(url, { ...init, headers });
+
+    // Falls 401 Unauthorized und User/Passwort konfiguriert: Token erneuern und einmal wiederholen
+    if (res.status === 401 && this.config.username && this.config.password) {
+      const loginRes = await this.login();
+      if (loginRes.ok) {
+        headers = {
+          ...this.authHeaders,
+          ...((init?.headers as Record<string, string>) || {})
+        };
+        res = await this.fetchFn(url, { ...init, headers });
+      }
+    }
+
+    return res;
   }
 
   private get authHeaders(): Record<string, string> {
@@ -48,9 +120,7 @@ export class AudiobookshelfProvider implements ContentProvider {
 
   async listLibraries(): Promise<{ id: string; name: string; mediaType: 'book' | 'podcast' }[]> {
     try {
-      const res = await this.fetchFn(`${this.config.baseUrl}/api/libraries`, {
-        headers: this.authHeaders
-      });
+      const res = await this.authenticatedFetch(`${this.config.baseUrl}/api/libraries`);
       if (!res.ok) return [];
       const data = await res.json();
       return (data.libraries || []).map((lib: any) => ({
@@ -79,7 +149,7 @@ export class AudiobookshelfProvider implements ContentProvider {
       try {
         // 1. Versuche Serien aus der Hörbücher-Bibliothek zu laden (wie in ABS)
         const seriesUrl = `${this.config.baseUrl}/api/libraries/${libraryId}/series?include=books&limit=200`;
-        const seriesRes = await this.fetchFn(seriesUrl, { headers: this.authHeaders });
+        const seriesRes = await this.authenticatedFetch(seriesUrl);
         let seriesList: any[] = [];
         if (seriesRes.ok) {
           const seriesData = await seriesRes.json();
@@ -88,7 +158,7 @@ export class AudiobookshelfProvider implements ContentProvider {
 
         // 2. Alle Bücher abrufen
         const itemsUrl = `${this.config.baseUrl}/api/libraries/${libraryId}/items?sort=media.metadata.title&limit=2000`;
-        const itemsRes = await this.fetchFn(itemsUrl, { headers: this.authHeaders });
+        const itemsRes = await this.authenticatedFetch(itemsUrl);
         let allBooks: any[] = [];
         if (itemsRes.ok) {
           const itemsData = await itemsRes.json();
@@ -190,7 +260,7 @@ export class AudiobookshelfProvider implements ContentProvider {
     // Podcasts auflisten
     try {
       const url = `${this.config.baseUrl}/api/libraries/${libraryId}/items?sort=media.metadata.title`;
-      const res = await this.fetchFn(url, { headers: this.authHeaders });
+      const res = await this.authenticatedFetch(url);
       if (!res.ok) return [];
 
       const data = await res.json();
@@ -228,9 +298,8 @@ export class AudiobookshelfProvider implements ContentProvider {
       let books: any[] = [];
       let seriesName = '';
 
-      const res = await this.fetchFn(
-        `${this.config.baseUrl}/api/libraries/${libraryId}/series?include=books&limit=200`,
-        { headers: this.authHeaders }
+      const res = await this.authenticatedFetch(
+        `${this.config.baseUrl}/api/libraries/${libraryId}/series?include=books&limit=200`
       );
       if (res.ok) {
         const data = await res.json();
@@ -244,9 +313,8 @@ export class AudiobookshelfProvider implements ContentProvider {
 
       // 2. Falls keine Bücher im Series-Endpoint enthalten waren: Versuche dedizierten Endpunkt
       if (books.length === 0) {
-        const directRes = await this.fetchFn(
-          `${this.config.baseUrl}/api/libraries/${libraryId}/series/${cleanSeriesId}`,
-          { headers: this.authHeaders }
+        const directRes = await this.authenticatedFetch(
+          `${this.config.baseUrl}/api/libraries/${libraryId}/series/${cleanSeriesId}`
         );
         if (directRes.ok) {
           const directData = await directRes.json();
@@ -257,9 +325,8 @@ export class AudiobookshelfProvider implements ContentProvider {
 
       // 3. Fallback: Lade alle Bücher der Bibliothek und filtere nach der Serie
       if (books.length === 0) {
-        const itemsRes = await this.fetchFn(
-          `${this.config.baseUrl}/api/libraries/${libraryId}/items?limit=2000`,
-          { headers: this.authHeaders }
+        const itemsRes = await this.authenticatedFetch(
+          `${this.config.baseUrl}/api/libraries/${libraryId}/items?limit=2000`
         );
         if (itemsRes.ok) {
           const itemsData = await itemsRes.json();
@@ -328,9 +395,8 @@ export class AudiobookshelfProvider implements ContentProvider {
     if (!parsed) return [];
 
     try {
-      const res = await this.fetchFn(
-        `${this.config.baseUrl}/api/items/${parsed.itemId}?expanded=1`,
-        { headers: this.authHeaders }
+      const res = await this.authenticatedFetch(
+        `${this.config.baseUrl}/api/items/${parsed.itemId}?expanded=1`
       );
       if (!res.ok) return [];
 
@@ -456,9 +522,8 @@ export class AudiobookshelfProvider implements ContentProvider {
     if (!parsed) return null;
 
     try {
-      const res = await this.fetchFn(
-        `${this.config.baseUrl}/api/me/progress/${parsed.itemId}`,
-        { headers: this.authHeaders }
+      const res = await this.authenticatedFetch(
+        `${this.config.baseUrl}/api/me/progress/${parsed.itemId}`
       );
       if (!res.ok) return null;
 
@@ -483,12 +548,11 @@ export class AudiobookshelfProvider implements ContentProvider {
     if (!parsed) return;
 
     try {
-      await this.fetchFn(
+      await this.authenticatedFetch(
         `${this.config.baseUrl}/api/me/progress/${parsed.itemId}`,
         {
           method: 'PATCH',
           headers: {
-            ...this.authHeaders,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -505,9 +569,8 @@ export class AudiobookshelfProvider implements ContentProvider {
 
   async fetchCoverOriginal(rawItemId: string): Promise<Buffer | null> {
     try {
-      const res = await this.fetchFn(
-        `${this.config.baseUrl}/api/items/${rawItemId}/cover?raw=1`,
-        { headers: this.authHeaders }
+      const res = await this.authenticatedFetch(
+        `${this.config.baseUrl}/api/items/${rawItemId}/cover?raw=1`
       );
       if (!res.ok) return null;
       const arrayBuffer = await res.arrayBuffer();
@@ -518,14 +581,12 @@ export class AudiobookshelfProvider implements ContentProvider {
   }
 
   async streamAudio(rawItemId: string, fileId: string, rangeHeader?: string): Promise<Response> {
-    const headers: Record<string, string> = {
-      ...this.authHeaders
-    };
+    const headers: Record<string, string> = {};
     if (rangeHeader) {
       headers['Range'] = rangeHeader;
     }
 
-    return this.fetchFn(
+    return this.authenticatedFetch(
       `${this.config.baseUrl}/api/items/${rawItemId}/file/${fileId}`,
       { headers }
     );

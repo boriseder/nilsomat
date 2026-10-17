@@ -250,4 +250,91 @@ describe('Audiobookshelf Provider mit Fixtures (AGENTS.md Abschnitt 4.1)', () =>
       isFinished: false
     });
   });
+
+  it('login mit username und password setzt token und autorisiert Anfragen', async () => {
+    let loginCalled = false;
+    const mockFetch = async (url: string, init?: RequestInit) => {
+      if (url.includes('/login')) {
+        loginCalled = true;
+        const body = JSON.parse(init?.body as string);
+        if (body.username === 'kind' && body.password === 'pass123') {
+          return new Response(
+            JSON.stringify({
+              user: { id: 'u1', username: 'kind', token: 'jwt-auth-token-xyz' }
+            }),
+            { status: 200 }
+          );
+        }
+        return new Response(JSON.stringify({ error: 'Falsches Passwort' }), { status: 401 });
+      }
+
+      if (url.includes('/api/libraries')) {
+        const auth = (init?.headers as any)?.['Authorization'];
+        if (auth === 'Bearer jwt-auth-token-xyz') {
+          return new Response(JSON.stringify(librariesFixture), { status: 200 });
+        }
+        return new Response(JSON.stringify({ error: 'Nicht autorisiert' }), { status: 401 });
+      }
+
+      return new Response('{}', { status: 200 });
+    };
+
+    const provider = new AudiobookshelfProvider(
+      {
+        baseUrl: 'http://abs.local:13378',
+        username: 'kind',
+        password: 'pass123'
+      },
+      mockFetch as any
+    );
+
+    // Initial ist kein Token da -> Provider ruft automatisch /login auf
+    const libs = await provider.listLibraries();
+    expect(loginCalled).toBe(true);
+    expect(libs).toHaveLength(2);
+  });
+
+  it('erneuert Token automatisch bei 401 Unauthorized, wenn User/Passwort konfiguriert sind', async () => {
+    let loginCount = 0;
+    let callCount = 0;
+
+    const mockFetch = async (url: string, init?: RequestInit) => {
+      if (url.includes('/login')) {
+        loginCount++;
+        return new Response(
+          JSON.stringify({
+            user: { id: 'u1', username: 'kind', token: `fresh-token-${loginCount}` }
+          }),
+          { status: 200 }
+        );
+      }
+
+      if (url.includes('/api/libraries')) {
+        callCount++;
+        const auth = (init?.headers as any)?.['Authorization'];
+        // Erster Aufruf mit altem Token schlägt fehl (401), zweiter mit fresh-token-1 gelingt
+        if (auth === 'Bearer fresh-token-1') {
+          return new Response(JSON.stringify(librariesFixture), { status: 200 });
+        }
+        return new Response(JSON.stringify({ error: 'Token expired' }), { status: 401 });
+      }
+
+      return new Response('{}', { status: 200 });
+    };
+
+    const provider = new AudiobookshelfProvider(
+      {
+        baseUrl: 'http://abs.local:13378',
+        token: 'expired-old-token',
+        username: 'kind',
+        password: 'valid-password'
+      },
+      mockFetch as any
+    );
+
+    const libs = await provider.listLibraries();
+    expect(loginCount).toBe(1);
+    expect(callCount).toBe(2); // Einmal mit expired-old-token (401), einmal mit fresh-token-1 (200)
+    expect(libs).toHaveLength(2);
+  });
 });

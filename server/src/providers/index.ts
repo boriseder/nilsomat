@@ -12,6 +12,8 @@ export function reloadProvidersFromDB(): void {
     absProvider = new AudiobookshelfProvider({
       baseUrl: config.absUrl || process.env.ABS_URL || 'http://localhost:13378',
       token: config.absToken || process.env.ABS_TOKEN || '',
+      username: config.absUsername || process.env.ABS_USER || '',
+      password: config.absPassword || process.env.ABS_PASSWORD || '',
       booksLibraryId: config.absBooksLibId || process.env.ABS_BOOKS_LIB_ID || '',
       podcastsLibraryId: config.absPodcastsLibId || process.env.ABS_PODCASTS_LIB_ID || ''
     });
@@ -29,6 +31,8 @@ export function reloadProvidersFromDB(): void {
 let absProvider = new AudiobookshelfProvider({
   baseUrl: process.env.ABS_URL || 'http://localhost:13378',
   token: process.env.ABS_TOKEN || '',
+  username: process.env.ABS_USER || '',
+  password: process.env.ABS_PASSWORD || '',
   booksLibraryId: process.env.ABS_BOOKS_LIB_ID || '',
   podcastsLibraryId: process.env.ABS_PODCASTS_LIB_ID || ''
 });

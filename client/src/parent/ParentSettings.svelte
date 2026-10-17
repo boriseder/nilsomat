@@ -22,8 +22,12 @@
 
   // Form State
   let absUrl = $state('');
+  let absUsername = $state('');
+  let absPassword = $state('');
+  let hasAbsPassword = $state(false);
   let absToken = $state('');
   let hasAbsToken = $state(false);
+  let showTokenMode = $state(false);
   let navidromeUrl = $state('');
   let navidromeUser = $state('');
   let navidromePassword = $state('');
@@ -139,12 +143,17 @@
       if (res.ok) {
         const cfg = await res.json();
         absUrl = cfg.absUrl || '';
-        hasAbsToken = cfg.hasAbsToken;
+        absUsername = cfg.absUsername || '';
+        hasAbsPassword = cfg.hasAbsPassword || false;
+        hasAbsToken = cfg.hasAbsToken || false;
+        if (hasAbsToken && !absUsername) {
+          showTokenMode = true;
+        }
         absBooksLibId = cfg.absBooksLibId || '';
         absPodcastsLibId = cfg.absPodcastsLibId || '';
         navidromeUrl = cfg.navidromeUrl || '';
         navidromeUser = cfg.navidromeUser || '';
-        hasNavidromePassword = cfg.hasNavidromePassword;
+        hasNavidromePassword = cfg.hasNavidromePassword || false;
         sleepTimerDefault = cfg.sleepTimerDefault || 0;
         dailyLimitMinutes = cfg.dailyLimitMinutes || 0;
       }
@@ -178,11 +187,19 @@
       const res = await fetch('/api/parent/test-abs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: absUrl, token: absToken || undefined })
+        body: JSON.stringify({
+          url: absUrl,
+          username: absUsername || undefined,
+          password: absPassword || undefined,
+          token: absToken || undefined
+        })
       });
       const data = await res.json();
       if (data.ok) {
         availableLibraries = data.libraries || [];
+        if (data.token) {
+          hasAbsToken = true;
+        }
         if (!silent) testAbsMsg = strings.parent.connections.testSuccess;
       } else if (!silent) {
         testAbsMsg = `${strings.parent.connections.testFailed}: ${data.error || ''}`;
@@ -228,6 +245,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           absUrl,
+          absUsername: absUsername || undefined,
+          absPassword: absPassword || undefined,
           absToken: absToken || undefined,
           absBooksLibId,
           absPodcastsLibId,
@@ -240,6 +259,7 @@
       });
       if (res.ok) {
         saveMsg = strings.parent.connections.savedSuccess;
+        absPassword = '';
         absToken = '';
         navidromePassword = '';
         loadConfig();
@@ -408,20 +428,62 @@
                   placeholder="http://192.168.1.50:13378"
                 />
               </div>
+
+              <!-- Login via Benutzername & Passwort (Standard) -->
               <div class="form-group">
-                <label for="abs-token">
-                  {strings.parent.connections.absToken}
+                <label for="abs-user">{strings.parent.connections.absUser}</label>
+                <input
+                  id="abs-user"
+                  type="text"
+                  bind:value={absUsername}
+                  placeholder="z. B. kind"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="abs-password">
+                  {strings.parent.connections.absPassword}
                   <span class="badge-status">
-                    {hasAbsToken ? strings.parent.connections.savedSet : strings.parent.connections.savedNotSet}
+                    {hasAbsPassword ? strings.parent.connections.savedSet : strings.parent.connections.savedNotSet}
                   </span>
                 </label>
                 <input
-                  id="abs-token"
+                  id="abs-password"
                   type="password"
-                  bind:value={absToken}
-                  placeholder={hasAbsToken ? '•••••••• (unverändert)' : 'API-Token eingeben'}
+                  bind:value={absPassword}
+                  placeholder={hasAbsPassword ? '•••••••• (unverändert)' : 'Passwort eingeben'}
                 />
               </div>
+
+              <!-- Optionaler Toggle für API-Token -->
+              <div class="token-toggle-row">
+                <button
+                  type="button"
+                  class="btn-toggle-token"
+                  onclick={() => (showTokenMode = !showTokenMode)}
+                >
+                  <span>{showTokenMode ? '▼' : '▶'}</span>
+                  <span>{strings.parent.connections.absTokenToggle}</span>
+                </button>
+              </div>
+
+              {#if showTokenMode}
+                <div class="form-group token-subgroup">
+                  <label for="abs-token">
+                    {strings.parent.connections.absToken}
+                    <span class="badge-status">
+                      {hasAbsToken ? strings.parent.connections.savedSet : strings.parent.connections.savedNotSet}
+                    </span>
+                  </label>
+                  <input
+                    id="abs-token"
+                    type="password"
+                    bind:value={absToken}
+                    placeholder={hasAbsToken ? '•••••••• (unverändert)' : 'API-Token eingeben'}
+                  />
+                </div>
+              {/if}
+
               <div class="button-row">
                 <button
                   type="button"
@@ -1049,5 +1111,34 @@
     color: #10b981;
     font-weight: 600;
     margin-top: 8px;
+  }
+
+  .token-toggle-row {
+    margin: 8px 0 16px 0;
+  }
+
+  .btn-toggle-token {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+  }
+
+  .btn-toggle-token:hover {
+    color: #e2e8f0;
+  }
+
+  .token-subgroup {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    margin-bottom: 16px;
   }
 </style>
