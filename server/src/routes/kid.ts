@@ -83,7 +83,7 @@ kidRoutes.get('/items', async (c) => {
   } catch (err: any) {
     const db = getDB();
     db.log('error', section === 'music' ? 'navidrome' : 'abs', `Fehler beim Laden von ${section}: ${err?.message || err}`);
-    return c.json({ items: [] });
+    return c.json({ error: 'Fehler beim Laden der Inhalte', items: [] }, 502);
   }
 });
 
@@ -118,7 +118,7 @@ kidRoutes.get('/series/:seriesId/items', async (c) => {
     return c.json({ items: withProgress });
   } catch (err: any) {
     db.log('error', 'abs', `Fehler beim Laden der Serie (${seriesId}): ${err?.message || err}`);
-    return c.json({ items: [] });
+    return c.json({ error: 'Fehler beim Laden der Inhalte', items: [] }, 502);
   }
 });
 
@@ -142,7 +142,7 @@ kidRoutes.get('/tracks/:itemId', async (c) => {
     return c.json({ tracks });
   } catch (err: any) {
     db.log('error', itemId.startsWith('nd:') ? 'navidrome' : 'abs', `Fehler beim Laden von Tracks (${itemId}): ${err?.message || err}`);
-    return c.json({ tracks: [] });
+    return c.json({ error: 'Fehler beim Laden der Inhalte', tracks: [] }, 502);
   }
 });
 

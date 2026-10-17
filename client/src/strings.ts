@@ -29,7 +29,8 @@ export const strings = {
       continueListening: 'Weiterhören',
       allListened: 'Alles fertig gehört!',
       sleepTimerActive: 'Schlummermodus an',
-      dailyLimitReached: 'Für heute ist genug gehört. Bis morgen!'
+      dailyLimitReached: 'Für heute ist genug gehört. Bis morgen!',
+      emptyCategory: 'Hier ist noch nichts da.'
     },
     error: {
       general: 'Gerade geht es nicht. Sag Mama oder Papa Bescheid.',

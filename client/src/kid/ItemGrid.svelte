@@ -164,7 +164,18 @@
   {/if}
 
   <main class="grid-content">
-    {#if viewMode === 'grid'}
+    {#if displayItems.length === 0}
+      <div class="empty-state">
+        <div class="empty-icon-wrap" style="color: {sectionColor};">
+          <Icon name={sectionIconName} size={72} />
+        </div>
+        <p class="empty-text">{strings.kid.status.emptyCategory}</p>
+        <button type="button" class="btn-empty-back" onclick={onBack}>
+          <Icon name="back" size={26} />
+          <span>{strings.kid.actions.back}</span>
+        </button>
+      </div>
+    {:else if viewMode === 'grid'}
       <!-- Kachel-Raster -->
       <div class="covers-grid">
         {#each displayItems as item, index (item.id)}
@@ -728,5 +739,59 @@
   .item-list-row.is-series .list-action-badge {
     background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     box-shadow: 0 6px 18px rgba(245, 158, 11, 0.4);
+  }
+
+  .empty-state {
+    flex: 1;
+    min-height: 380px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 48px;
+    text-align: center;
+  }
+
+  .empty-icon-wrap {
+    width: 120px;
+    height: 120px;
+    border-radius: 36px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .empty-text {
+    font-size: 26px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0;
+  }
+
+  .btn-empty-back {
+    min-height: 72px;
+    min-width: 180px;
+    padding: 16px 36px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    touch-action: manipulation;
+  }
+
+  .btn-empty-back:active {
+    transform: scale(0.97);
   }
 </style>
