@@ -252,6 +252,12 @@ class AudioEngine {
     }
   }
 
+  public playTrackIndex(index: number): void {
+    if (!this.currentItem || !this.playlist.length) return;
+    if (index < 0 || index >= this.playlist.length) return;
+    this.playItem(this.currentItem, this.playlist, index, 0);
+  }
+
   public async play(): Promise<void> {
     if (!this.audio || !this.currentTrack) return;
     try {

@@ -272,6 +272,8 @@
     <FullscreenPlayer
       item={playerState.currentItem}
       track={playerState.currentTrack}
+      tracks={playerState.tracks}
+      trackIndex={playerState.trackIndex}
       isPlaying={playerState.isPlaying}
       currentTime={playerState.currentTime}
       duration={playerState.duration}

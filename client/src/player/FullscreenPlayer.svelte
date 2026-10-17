@@ -9,6 +9,8 @@
   interface Props {
     item: Item;
     track: Track;
+    tracks?: Track[];
+    trackIndex?: number;
     isPlaying: boolean;
     currentTime: number;
     duration: number;
@@ -19,6 +21,8 @@
   const {
     item,
     track,
+    tracks = [],
+    trackIndex = 0,
     isPlaying,
     currentTime,
     duration,
@@ -27,8 +31,19 @@
   }: Props = $props();
 
   let showSleepModal = $state(false);
+  let showTracklist = $state(false);
+
+  const effectiveTracks = $derived(
+    tracks && tracks.length > 0 ? tracks : audioEngine.getState().tracks
+  );
+  const currentTrackIndex = $derived(
+    trackIndex ?? audioEngine.getState().trackIndex
+  );
 
   const isBookOrPodcast = $derived(item.section === 'books' || item.section === 'podcasts');
+  const tracklistButtonLabel = $derived(
+    isBookOrPodcast ? strings.kid.actions.tracklistChapters : strings.kid.actions.tracklistSongs
+  );
 
   const progressPercent = $derived(
     duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0
@@ -47,6 +62,22 @@
     }
   }
 
+  function handleSelectTrack(index: number): void {
+    audioEngine.playTrackIndex(index);
+  }
+
+  function formatTrackDuration(sec?: number): string {
+    if (!sec || sec <= 0) return '';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    if (m >= 60) {
+      const h = Math.floor(m / 60);
+      const remM = m % 60;
+      return `${h}:${remM.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
   const timerOptions: SleepTimerDuration[] = [15, 30, 45, 60, null];
 </script>
 
@@ -60,45 +91,124 @@
       <span>{strings.kid.actions.back}</span>
     </button>
 
-    <button
-      type="button"
-      class="btn-sleep"
-      class:active={sleepTimerDuration !== null}
-      onclick={() => (showSleepModal = true)}
-    >
-      <Icon
-        name="moon"
-        size={26}
-        color={sleepTimerDuration !== null ? '#fbbf24' : 'currentColor'}
-      />
-      <span>
-        {sleepTimerDuration ? `${sleepTimerDuration} Min.` : strings.kid.actions.sleepTimer}
-      </span>
-    </button>
+    <div class="player-header-actions">
+      {#if effectiveTracks.length > 1}
+        <button
+          type="button"
+          class="btn-tracklist"
+          class:active={showTracklist}
+          onclick={() => (showTracklist = !showTracklist)}
+          aria-label={showTracklist ? strings.kid.actions.backToCover : tracklistButtonLabel}
+        >
+          <Icon name={showTracklist ? 'back' : 'list'} size={26} />
+          <span>{showTracklist ? strings.kid.actions.backToCover : tracklistButtonLabel}</span>
+        </button>
+      {/if}
+
+      <button
+        type="button"
+        class="btn-sleep"
+        class:active={sleepTimerDuration !== null}
+        onclick={() => (showSleepModal = true)}
+      >
+        <Icon
+          name="moon"
+          size={26}
+          color={sleepTimerDuration !== null ? '#fbbf24' : 'currentColor'}
+        />
+        <span>
+          {sleepTimerDuration ? `${sleepTimerDuration} Min.` : strings.kid.actions.sleepTimer}
+        </span>
+      </button>
+    </div>
   </header>
 
   <main class="player-body">
-    <!-- Großes zentriertes Cover mit magischem Ambient Glow -->
-    <div class="player-cover-container">
-      <div class="cover-ambient-glow" style="background: {glowColor};"></div>
-      <div class="player-cover-box">
-        <CoverImage
-          coverSrc={item.coverUrl}
-          altText={item.title}
-          dominantColor={item.dominantColor}
-          size={1280}
-          loading="eager"
-          fetchPriority="high"
-        />
-      </div>
-    </div>
+    {#if showTracklist}
+      <!-- Trackliste Ansicht (große, kinderfreundliche Zeilen) -->
+      <div class="tracklist-container" role="region" aria-label="Titelauswahl">
+        <div class="tracklist-top-bar">
+          <div class="tracklist-heading">
+            <span class="tracklist-count-badge">
+              {effectiveTracks.length} {isBookOrPodcast ? strings.kid.actions.tracklistChapters : strings.kid.actions.tracklistSongs}
+            </span>
+          </div>
+          <button
+            type="button"
+            class="btn-return-cover"
+            onclick={() => (showTracklist = false)}
+          >
+            <Icon name="back" size={22} />
+            <span>{strings.kid.actions.backToCover}</span>
+          </button>
+        </div>
 
-    <div class="player-meta">
-      <h2 class="item-title">{item.title}</h2>
-      {#if track.title !== item.title}
-        <h3 class="track-title">{track.title}</h3>
-      {/if}
-    </div>
+        <div class="tracklist-scroll-view">
+          {#each effectiveTracks as t, idx (t.id || idx)}
+            {@const isCurrent = idx === currentTrackIndex}
+            <button
+              type="button"
+              class="tracklist-item-row"
+              class:is-active={isCurrent}
+              onclick={() => handleSelectTrack(idx)}
+            >
+              <div class="track-row-left">
+                {#if isCurrent}
+                  <div class="active-equalizer-pill" style="background: {glowColor};">
+                    <Icon name={isPlaying ? 'pause' : 'play'} size={24} color="#ffffff" />
+                  </div>
+                {:else}
+                  <div class="track-index-num">
+                    <span>{idx + 1}</span>
+                  </div>
+                {/if}
+              </div>
+
+              <div class="track-row-info">
+                <span class="track-row-title">{t.title}</span>
+                {#if t.durationSec}
+                  <span class="track-row-duration">{formatTrackDuration(t.durationSec)}</span>
+                {/if}
+              </div>
+
+              <div class="track-row-indicator">
+                {#if isCurrent}
+                  <span class="now-playing-badge" style="background: {glowColor}33; color: {glowColor}; border: 1px solid {glowColor}66;">
+                    {isPlaying ? strings.kid.actions.play : strings.kid.actions.pause}
+                  </span>
+                {:else}
+                  <div class="track-play-hint">
+                    <Icon name="play" size={22} color="rgba(255,255,255,0.4)" />
+                  </div>
+                {/if}
+              </div>
+            </button>
+          {/each}
+        </div>
+      </div>
+    {:else}
+      <!-- Großes zentriertes Cover mit magischem Ambient Glow -->
+      <div class="player-cover-container">
+        <div class="cover-ambient-glow" style="background: {glowColor};"></div>
+        <div class="player-cover-box">
+          <CoverImage
+            coverSrc={item.coverUrl}
+            altText={item.title}
+            dominantColor={item.dominantColor}
+            size={1280}
+            loading="eager"
+            fetchPriority="high"
+          />
+        </div>
+      </div>
+
+      <div class="player-meta">
+        <h2 class="item-title">{item.title}</h2>
+        {#if track.title !== item.title}
+          <h3 class="track-title">{track.title}</h3>
+        {/if}
+      </div>
+    {/if}
 
     <!-- Kaugummi-Fortschrittsbalken mit mind. 48px Touch-Höhe -->
     <div
@@ -306,6 +416,241 @@
     box-shadow:
       0 8px 24px rgba(245, 158, 11, 0.35),
       inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+
+  .player-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .btn-tracklist {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(26, 33, 56, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(255, 255, 255, 0.16);
+    color: var(--text-primary);
+    padding: 0 24px;
+    height: var(--touch-min-size);
+    border-radius: 9999px;
+    font-size: var(--font-size-base);
+    font-weight: 800;
+    box-shadow:
+      0 8px 20px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, border-color 0.15s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-tracklist:hover {
+    background: rgba(38, 48, 80, 0.95);
+    border-color: rgba(255, 255, 255, 0.28);
+    transform: translateY(-2px);
+    box-shadow:
+      0 12px 24px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+
+  .btn-tracklist:active {
+    transform: scale(0.95);
+  }
+
+  .btn-tracklist.active {
+    background: rgba(99, 102, 241, 0.28);
+    border-color: rgba(129, 140, 248, 0.7);
+    color: #a5b4fc;
+    box-shadow:
+      0 8px 24px rgba(99, 102, 241, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  /* Trackliste Container & Rows */
+  .tracklist-container {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    max-height: 58vh;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1.5px solid rgba(255, 255, 255, 0.14);
+    border-radius: 28px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow:
+      0 16px 40px rgba(0, 0, 0, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+  }
+
+  .tracklist-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .tracklist-count-badge {
+    font-size: 20px;
+    font-weight: 800;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 6px 18px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .btn-return-cover {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    color: var(--text-primary);
+    padding: 0 20px;
+    height: 48px;
+    border-radius: 9999px;
+    font-size: 18px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+
+  .btn-return-cover:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+  }
+
+  .btn-return-cover:active {
+    transform: scale(0.96);
+  }
+
+  .tracklist-scroll-view {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .tracklist-item-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    min-height: 74px;
+    padding: 12px 18px;
+    background: rgba(30, 41, 59, 0.65);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .tracklist-item-row:hover {
+    background: rgba(45, 60, 88, 0.85);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .tracklist-item-row:active {
+    transform: scale(0.98);
+  }
+
+  .tracklist-item-row.is-active {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(96, 165, 250, 0.75);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+  }
+
+  .track-row-left {
+    flex-shrink: 0;
+  }
+
+  .track-index-num {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 800;
+    color: #94a3b8;
+  }
+
+  .active-equalizer-pill {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+
+  .track-row-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .track-row-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f8fafc;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .track-row-duration {
+    font-size: 16px;
+    font-weight: 600;
+    color: #94a3b8;
+  }
+
+  .track-row-indicator {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .now-playing-badge {
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 15px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .track-play-hint {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .player-body {

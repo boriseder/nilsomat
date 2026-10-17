@@ -32,6 +32,19 @@
   }
 
   let viewMode = $state<'grid' | 'list'>('grid');
+  let musicFilter = $state<'all' | 'playlists' | 'albums'>('all');
+
+  const hasPlaylists = $derived(items.some((i) => i.kind === 'playlist'));
+
+  const displayItems = $derived(
+    section === 'music'
+      ? items.filter((item) => {
+          if (musicFilter === 'playlists') return item.kind === 'playlist';
+          if (musicFilter === 'albums') return item.kind === 'album';
+          return true;
+        })
+      : items
+  );
 
   $effect(() => {
     // Wenn sich die Ansicht (z. B. Wechsel in eine Serie) ändert, gemerkten Modus laden
@@ -116,15 +129,50 @@
     </div>
   </header>
 
+  {#if section === 'music' && hasPlaylists}
+    <nav class="music-filter-bar" aria-label="Musikfilter">
+      <button
+        type="button"
+        class="btn-music-filter"
+        class:active={musicFilter === 'all'}
+        onclick={() => (musicFilter = 'all')}
+      >
+        <Icon name="music" size={22} />
+        <span>{strings.kid.musicFilters.all}</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn-music-filter"
+        class:active={musicFilter === 'playlists'}
+        onclick={() => (musicFilter = 'playlists')}
+      >
+        <Icon name="sparkle" size={22} color={musicFilter === 'playlists' ? '#ffffff' : '#f43f5e'} />
+        <span>{strings.kid.musicFilters.playlists}</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn-music-filter"
+        class:active={musicFilter === 'albums'}
+        onclick={() => (musicFilter = 'albums')}
+      >
+        <Icon name="music" size={22} color={musicFilter === 'albums' ? '#ffffff' : '#38bdf8'} />
+        <span>{strings.kid.musicFilters.albums}</span>
+      </button>
+    </nav>
+  {/if}
+
   <main class="grid-content">
     {#if viewMode === 'grid'}
       <!-- Kachel-Raster -->
       <div class="covers-grid">
-        {#each items as item, index (item.id)}
+        {#each displayItems as item, index (item.id)}
           <button
             type="button"
             class="item-card"
             class:is-series={item.kind === 'series'}
+            class:is-playlist={item.kind === 'playlist'}
             onclick={() => onSelectItem(item)}
           >
             <div class="card-cover-container">
@@ -139,7 +187,7 @@
                 />
               </div>
 
-              <!-- Indikator auf dem Cover: Serie oder Folgennummer -->
+              <!-- Indikator auf dem Cover: Serie, Playlist oder Folgennummer -->
               {#if item.kind === 'series'}
                 <div class="card-sticker-badge series-badge">
                   <span class="sticker-star">★</span>
@@ -147,6 +195,15 @@
                     {item.bookCount
                       ? `${item.bookCount} ${item.bookCount === 1 ? strings.kid.types.episode : strings.kid.types.episodes}`
                       : strings.kid.types.series}
+                  </span>
+                </div>
+              {:else if item.kind === 'playlist'}
+                <div class="card-sticker-badge playlist-badge">
+                  <span class="sticker-star">🎵</span>
+                  <span>
+                    {item.songCount
+                      ? `${item.songCount} ${item.songCount === 1 ? strings.kid.types.song : strings.kid.types.songs}`
+                      : strings.kid.types.playlist}
                   </span>
                 </div>
               {:else if item.sequence}
@@ -162,6 +219,10 @@
                 {#if item.kind === 'series'}
                   <span class="type-pill pill-series">
                     📚 {strings.kid.types.series}{item.bookCount ? ` · ${item.bookCount} ${item.bookCount === 1 ? strings.kid.types.episode : strings.kid.types.episodes}` : ''}
+                  </span>
+                {:else if item.kind === 'playlist'}
+                  <span class="type-pill pill-playlist">
+                    🎵 {strings.kid.types.playlist}{item.songCount ? ` · ${item.songCount} ${item.songCount === 1 ? strings.kid.types.song : strings.kid.types.songs}` : ''}
                   </span>
                 {:else if item.section === 'books'}
                   <span class="type-pill pill-audiobook">
@@ -180,11 +241,12 @@
     {:else}
       <!-- Listen-Ansicht: Schnell, kompakt und übersichtlich bei 50+ Folgen -->
       <div class="items-list">
-        {#each items as item, index (item.id)}
+        {#each displayItems as item, index (item.id)}
           <button
             type="button"
             class="item-list-row"
             class:is-series={item.kind === 'series'}
+            class:is-playlist={item.kind === 'playlist'}
             onclick={() => onSelectItem(item)}
           >
             <div class="list-index-badge">
@@ -208,6 +270,13 @@
                   <span class="type-pill pill-series">
                     📚 {strings.kid.types.series}{item.bookCount ? ` · ${item.bookCount} ${item.bookCount === 1 ? strings.kid.types.episode : strings.kid.types.episodes}` : ''}
                   </span>
+                {:else if item.kind === 'playlist'}
+                  <span class="type-pill pill-playlist">
+                    🎵 {strings.kid.types.playlist}{item.songCount ? ` · ${item.songCount} ${item.songCount === 1 ? strings.kid.types.song : strings.kid.types.songs}` : ''}
+                  </span>
+                  {#if item.durationSec}
+                    <span class="list-duration">{formatDuration(item.durationSec)}</span>
+                  {/if}
                 {:else if item.section === 'books'}
                   <span class="type-pill pill-audiobook">
                     📖 {item.sequence ? `${strings.kid.types.episode} ${item.sequence}` : strings.kid.types.audiobook}
@@ -432,6 +501,10 @@
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   }
 
+  .playlist-badge {
+    background: linear-gradient(135deg, #f43f5e, #be123c);
+  }
+
   .sticker-star {
     font-size: 14px;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
@@ -463,7 +536,7 @@
     gap: 8px;
   }
 
-  /* Type Pill für Kennzeichnung Serie / Hörbuch */
+  /* Type Pill für Kennzeichnung Serie / Hörbuch / Playlist */
   .type-pill {
     display: inline-flex;
     align-items: center;
@@ -481,6 +554,12 @@
     border: 1.5px solid rgba(245, 158, 11, 0.45);
   }
 
+  .pill-playlist {
+    background: rgba(244, 63, 94, 0.22);
+    color: #fda4af;
+    border: 1.5px solid rgba(244, 63, 94, 0.45);
+  }
+
   .pill-audiobook {
     background: rgba(59, 130, 246, 0.18);
     color: #93c5fd;
@@ -491,6 +570,52 @@
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-secondary);
     border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  /* Musik-Filterleiste */
+  .music-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 32px;
+    background: rgba(14, 19, 38, 0.75);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  .btn-music-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 24px;
+    height: 52px;
+    border-radius: 9999px;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-secondary);
+    font-size: 18px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .btn-music-filter:hover {
+    color: var(--text-primary);
+    background: rgba(45, 60, 88, 0.85);
+    transform: translateY(-2px);
+  }
+
+  .btn-music-filter:active {
+    transform: scale(0.96);
+  }
+
+  .btn-music-filter.active {
+    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 6px 18px rgba(244, 63, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
   }
 
   /* Listen-Ansicht */

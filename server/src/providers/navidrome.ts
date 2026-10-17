@@ -98,13 +98,15 @@ export class NavidromeProvider implements ContentProvider {
           if (isExplicitlyShared) {
             const id = this.makeId('playlist', pl.id);
             const coverArtId = pl.coverArt || pl.id;
+            const songCount = pl.songCount !== undefined ? Number(pl.songCount) : undefined;
             items.push({
               id,
               section: 'music',
               kind: 'playlist',
               title: pl.name || 'Playlist',
               coverUrl: `/media/cover/${id}?w=640&v=${encodeURIComponent(coverArtId)}`,
-              durationSec: pl.duration ? Math.round(pl.duration) : undefined
+              durationSec: pl.duration ? Math.round(pl.duration) : undefined,
+              songCount
             });
           }
         }
@@ -145,13 +147,15 @@ export class NavidromeProvider implements ContentProvider {
       for (const alb of albums) {
         const id = this.makeId('album', alb.id);
         const coverArtId = alb.coverArt || alb.id;
+        const songCount = alb.songCount !== undefined ? Number(alb.songCount) : undefined;
         items.push({
           id,
           section: 'music',
           kind: 'album',
           title: alb.name || alb.title || 'Album',
           coverUrl: `/media/cover/${id}?w=640&v=${encodeURIComponent(coverArtId)}`,
-          durationSec: alb.duration ? Math.round(alb.duration) : undefined
+          durationSec: alb.duration ? Math.round(alb.duration) : undefined,
+          songCount
         });
       }
     } catch {

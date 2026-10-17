@@ -19,7 +19,10 @@ export const strings = {
       previous: 'Zurück',
       sleepTimer: 'Schlummern',
       close: 'Schließen',
-      retry: 'Nochmal versuchen'
+      retry: 'Nochmal versuchen',
+      tracklistChapters: 'Kapitel',
+      tracklistSongs: 'Lieder',
+      backToCover: 'Zum Cover'
     },
     status: {
       loading: 'Lädt...',
@@ -36,11 +39,20 @@ export const strings = {
       grid: 'Kacheln',
       list: 'Liste'
     },
+    musicFilters: {
+      all: 'Alles',
+      playlists: 'Playlists',
+      albums: 'Alben'
+    },
     types: {
       series: 'Serie',
       episode: 'Folge',
       episodes: 'Folgen',
-      audiobook: 'Hörbuch'
+      audiobook: 'Hörbuch',
+      playlist: 'Playlist',
+      album: 'Album',
+      song: 'Lied',
+      songs: 'Lieder'
     }
   },
   parent: {

@@ -79,7 +79,8 @@ describe('Navidrome Provider mit Fixtures (AGENTS.md Abschnitt 4.2)', () => {
       kind: 'playlist',
       title: 'Lieblingslieder zum Tanzen',
       coverUrl: '/media/cover/nd:playlist:pl-1?w=640&v=pl-pl-1',
-      durationSec: 210
+      durationSec: 210,
+      songCount: 1
     });
 
     // Alben danach
