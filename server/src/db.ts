@@ -15,6 +15,8 @@ export interface AppConfig {
   navidromePassword?: string;
   sleepTimerDefault?: number; // minutes
   dailyLimitMinutes?: number; // minutes (0 = disabled)
+  maxItemsPerCategory?: number; // 0 = unbegrenzt, sonst z.B. 10, 15, 20, 30
+  podcastEpisodeLimit?: number; // 0 = alle, sonst z.B. 10, 20, 30, 50 (Standard: 30)
 }
 
 export interface StatusLog {
@@ -282,7 +284,9 @@ export class DB {
       navidromeUser: map.get('navidrome_user'),
       navidromePassword: this.decrypt(map.get('navidrome_password_enc') || ''),
       sleepTimerDefault: map.has('sleep_timer_default') ? Number(map.get('sleep_timer_default')) : 0,
-      dailyLimitMinutes: map.has('daily_limit_minutes') ? Number(map.get('daily_limit_minutes')) : 0
+      dailyLimitMinutes: map.has('daily_limit_minutes') ? Number(map.get('daily_limit_minutes')) : 0,
+      maxItemsPerCategory: map.has('max_items_per_category') ? Number(map.get('max_items_per_category')) : 0,
+      podcastEpisodeLimit: map.has('podcast_episode_limit') ? Number(map.get('podcast_episode_limit')) : 30
     };
   }
 
@@ -300,6 +304,8 @@ export class DB {
       if (config.navidromePassword !== undefined) stmt.run('navidrome_password_enc', this.encrypt(config.navidromePassword));
       if (config.sleepTimerDefault !== undefined) stmt.run('sleep_timer_default', String(config.sleepTimerDefault));
       if (config.dailyLimitMinutes !== undefined) stmt.run('daily_limit_minutes', String(config.dailyLimitMinutes));
+      if (config.maxItemsPerCategory !== undefined) stmt.run('max_items_per_category', String(config.maxItemsPerCategory));
+      if (config.podcastEpisodeLimit !== undefined) stmt.run('podcast_episode_limit', String(config.podcastEpisodeLimit));
     });
     txn();
   }

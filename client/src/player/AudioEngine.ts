@@ -11,6 +11,7 @@ export interface PlayerState {
   duration: number;
   isLoading: boolean;
   sleepTimerDuration: SleepTimerDuration;
+  sleepTimerExpired: boolean;
 }
 
 type StateListener = (state: PlayerState) => void;
@@ -29,6 +30,7 @@ class AudioEngine {
   private currentTime: number = 0;
   private duration: number = 0;
   private sleepTimerDuration: SleepTimerDuration = null;
+  private sleepTimerExpired: boolean = false;
 
   private progressInterval: ReturnType<typeof setInterval> | null = null;
   private listeners: Set<StateListener> = new Set();
@@ -39,6 +41,7 @@ class AudioEngine {
     sleepTimer.setCallback(() => {
       this.pause();
       this.sleepTimerDuration = null;
+      this.sleepTimerExpired = true;
       this.notify();
     });
 
@@ -86,8 +89,16 @@ class AudioEngine {
       currentTime: this.currentTime,
       duration: this.duration,
       isLoading: this.isLoading,
-      sleepTimerDuration: this.sleepTimerDuration
+      sleepTimerDuration: this.sleepTimerDuration,
+      sleepTimerExpired: this.sleepTimerExpired
     };
+  }
+
+  public dismissSleepTimer(): void {
+    if (this.sleepTimerExpired) {
+      this.sleepTimerExpired = false;
+      this.notify();
+    }
   }
 
   public init(): void {
@@ -204,6 +215,7 @@ class AudioEngine {
     this.init();
     if (!this.audio) return;
 
+    this.sleepTimerExpired = false;
     this.currentItem = item;
     this.playlist = tracks;
     this.trackIndex = Math.max(0, Math.min(startIndex, tracks.length - 1));
@@ -260,6 +272,7 @@ class AudioEngine {
 
   public async play(): Promise<void> {
     if (!this.audio || !this.currentTrack) return;
+    this.sleepTimerExpired = false;
     try {
       await this.audio.play();
     } catch {

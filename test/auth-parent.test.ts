@@ -114,7 +114,9 @@ describe('Elternbereich Auth, PIN Rate-Limit & Hidden Items (AGENTS.md Abschnitt
         navidromeUser: 'kiduser',
         navidromePassword: 'supersecretpassword',
         sleepTimerDefault: 30,
-        dailyLimitMinutes: 60
+        dailyLimitMinutes: 60,
+        maxItemsPerCategory: 15,
+        podcastEpisodeLimit: 20
       })
     });
     expect(saveRes.status).toBe(200);
@@ -132,6 +134,15 @@ describe('Elternbereich Auth, PIN Rate-Limit & Hidden Items (AGENTS.md Abschnitt
     expect(configData.hasNavidromePassword).toBe(true);
     expect(configData.sleepTimerDefault).toBe(30);
     expect(configData.dailyLimitMinutes).toBe(60);
+    expect(configData.maxItemsPerCategory).toBe(15);
+    expect(configData.podcastEpisodeLimit).toBe(20);
+
+    // /api/kid/status liefert die Limits ebenfalls für das UI aus
+    const kidStatusRes = await app.request('/api/kid/status');
+    expect(kidStatusRes.status).toBe(200);
+    const kidStatus = await kidStatusRes.json();
+    expect(kidStatus.maxItemsPerCategory).toBe(15);
+    expect(kidStatus.podcastEpisodeLimit).toBe(20);
 
     // Weder ABS-Token noch Navidrome-Passwort dürfen in der Antwort stehen!
     const responseString = JSON.stringify(configData);
@@ -187,5 +198,24 @@ describe('Elternbereich Auth, PIN Rate-Limit & Hidden Items (AGENTS.md Abschnitt
     const ids = kidData.items.map((i: any) => i.id);
     expect(ids).toContain('abs:lib1:book1');
     expect(ids).not.toContain('abs:lib1:book2');
+  });
+
+  it('Kuratieren statt Überfluten: maxItemsPerCategory begrenzt sichtbare Items im Kinderbereich', async () => {
+    db.saveConfig({ maxItemsPerCategory: 2 });
+
+    const mockAbs = new AudiobookshelfProvider({ baseUrl: 'http://dummy', token: 'token' });
+    mockAbs.listItems = async () => [
+      { id: 'abs:b1', section: 'books', kind: 'audiobook', title: 'Buch 1', coverUrl: '/media/cover/abs:b1?w=640' },
+      { id: 'abs:b2', section: 'books', kind: 'audiobook', title: 'Buch 2', coverUrl: '/media/cover/abs:b2?w=640' },
+      { id: 'abs:b3', section: 'books', kind: 'audiobook', title: 'Buch 3', coverUrl: '/media/cover/abs:b3?w=640' },
+      { id: 'abs:b4', section: 'books', kind: 'audiobook', title: 'Buch 4', coverUrl: '/media/cover/abs:b4?w=640' }
+    ];
+    setABSProvider(mockAbs);
+
+    const res = await app.request('/api/kid/items?section=books');
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.items.length).toBe(2);
+    expect(data.items.map((i: any) => i.id)).toEqual(['abs:b1', 'abs:b2']);
   });
 });

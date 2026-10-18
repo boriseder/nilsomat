@@ -11,6 +11,7 @@
   import { audioEngine, type PlayerState } from './player/AudioEngine';
   import FullscreenPlayer from './player/FullscreenPlayer.svelte';
   import MiniPlayer from './player/MiniPlayer.svelte';
+  import SleepOverlay from './player/SleepOverlay.svelte';
 
   let currentView = $state<'home' | 'grid' | 'episodes' | 'series'>('home');
   let selectedSection = $state<Section | null>(null);
@@ -20,6 +21,7 @@
   let activeSections = $state<Section[]>(['books', 'podcasts', 'music']);
   let items = $state<Item[]>([]);
   let tracks = $state<Track[]>([]);
+  let configuredPodcastLimit = $state(30);
   let podcastEpisodesLimit = $state(30);
   let hasMoreEpisodes = $state(false);
   let loadingMoreEpisodes = $state(false);
@@ -49,6 +51,9 @@
         const data = await res.json();
         isConfigured = data.configured;
         dailyLimitReached = data.dailyLimitReached;
+        if (data.podcastEpisodeLimit) {
+          configuredPodcastLimit = data.podcastEpisodeLimit;
+        }
         if (!isConfigured) {
           showParent = true;
         }
@@ -116,9 +121,10 @@
       loading = true;
       hasError = false;
       currentView = 'episodes';
-      podcastEpisodesLimit = 30;
+      const initialLimit = configuredPodcastLimit || 30;
+      podcastEpisodesLimit = initialLimit;
       try {
-        const res = await fetch(`/api/kid/tracks/${encodeURIComponent(item.id)}?limit=30`);
+        const res = await fetch(`/api/kid/tracks/${encodeURIComponent(item.id)}?limit=${initialLimit}`);
         if (!res.ok) throw new Error();
         const data = await res.json();
         tracks = data.tracks || [];
@@ -178,7 +184,8 @@
     if (!selectedItem || loadingMoreEpisodes || !hasMoreEpisodes) return;
     loadingMoreEpisodes = true;
     try {
-      const nextLimit = podcastEpisodesLimit + 30;
+      const step = configuredPodcastLimit || 30;
+      const nextLimit = podcastEpisodesLimit + step;
       const res = await fetch(
         `/api/kid/tracks/${encodeURIComponent(selectedItem.id)}?limit=${nextLimit}`
       );
@@ -312,6 +319,11 @@
 
   {#if showParent}
     <ParentSettings onClose={handleCloseParent} />
+  {/if}
+
+  <!-- Sanfte visuelle Einschlafbegleitung bei Timer-Ablauf -->
+  {#if playerState.sleepTimerExpired}
+    <SleepOverlay onDismiss={() => audioEngine.dismissSleepTimer()} />
   {/if}
 </div>
 

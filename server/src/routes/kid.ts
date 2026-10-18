@@ -5,14 +5,16 @@ import type { Section } from '../providers/types.js';
 
 export const kidRoutes = new Hono();
 
-// Status für den Kinderbereich (Tageslimit, Timer-Default, Erstkonfiguration)
+// Status für den Kinderbereich (Tageslimit, Timer-Default, Erstkonfiguration, Limits)
 kidRoutes.get('/status', (c) => {
   const db = getDB();
   const config = db.getConfig();
   return c.json({
     configured: db.hasPin(),
     dailyLimitReached: db.isDailyLimitReached(),
-    sleepTimerDefault: config.sleepTimerDefault || 0
+    sleepTimerDefault: config.sleepTimerDefault || 0,
+    maxItemsPerCategory: config.maxItemsPerCategory || 0,
+    podcastEpisodeLimit: config.podcastEpisodeLimit || 30
   });
 });
 
@@ -58,9 +60,15 @@ kidRoutes.get('/items', async (c) => {
   try {
     const items = await provider.listItems(section);
     const db = getDB();
+    const config = db.getConfig();
 
     // Verborgene Items herausfiltern (Abschnitt 6 & 8)
-    const visibleItems = items.filter((item) => !db.isItemHidden(item.id));
+    let visibleItems = items.filter((item) => !db.isItemHidden(item.id));
+
+    // Schutz vor Choice Overload: Maximale Anzahl Titel pro Kategorie
+    if (config.maxItemsPerCategory && config.maxItemsPerCategory > 0) {
+      visibleItems = visibleItems.slice(0, config.maxItemsPerCategory);
+    }
 
     // Sicherstellen, dass Fortschritt für Bücher/Podcasts beigefügt wird
     const itemsWithProgress = await Promise.all(
@@ -138,8 +146,10 @@ kidRoutes.get('/tracks/:itemId', async (c) => {
   }
 
   try {
+    const config = db.getConfig();
     const limitQuery = c.req.query('limit');
-    const limit = limitQuery ? parseInt(limitQuery, 10) : undefined;
+    const defaultLimit = config.podcastEpisodeLimit !== undefined && config.podcastEpisodeLimit > 0 ? config.podcastEpisodeLimit : 30;
+    const limit = limitQuery ? parseInt(limitQuery, 10) : defaultLimit;
 
     if (typeof provider.listTracksWithMeta === 'function') {
       const meta = await provider.listTracksWithMeta(itemId, limit);

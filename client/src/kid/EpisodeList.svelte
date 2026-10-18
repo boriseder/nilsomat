@@ -59,8 +59,12 @@
           class="episode-row"
           onclick={() => onPlayTrack(track, tracks)}
         >
-          <div class="episode-index-badge">
-            <span>{index + 1}</span>
+          <div class="episode-index-badge" class:is-finished={track.finished}>
+            {#if track.finished}
+              <Icon name="check" size={22} color="#ffffff" />
+            {:else}
+              <span>{index + 1}</span>
+            {/if}
           </div>
 
           <div class="row-info">
@@ -225,6 +229,12 @@
     font-weight: 800;
     color: var(--text-secondary);
     flex-shrink: 0;
+  }
+
+  .episode-index-badge.is-finished {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45);
   }
 
   .row-info {

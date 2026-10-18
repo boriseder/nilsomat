@@ -28,4 +28,5 @@ export interface Track {
   streamUrl: string;
   startOffsetSec?: number;
   coverUrl?: string;
+  finished?: boolean;
 }

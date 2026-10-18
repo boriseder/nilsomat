@@ -41,6 +41,8 @@
   // Rules
   let sleepTimerDefault = $state(0);
   let dailyLimitMinutes = $state(0);
+  let maxItemsPerCategory = $state(0);
+  let podcastEpisodeLimit = $state(30);
 
   // Status & Logs
   let statusInfo = $state<any>(null);
@@ -156,6 +158,8 @@
         hasNavidromePassword = cfg.hasNavidromePassword || false;
         sleepTimerDefault = cfg.sleepTimerDefault || 0;
         dailyLimitMinutes = cfg.dailyLimitMinutes || 0;
+        maxItemsPerCategory = cfg.maxItemsPerCategory || 0;
+        podcastEpisodeLimit = cfg.podcastEpisodeLimit !== undefined ? cfg.podcastEpisodeLimit : 30;
       }
     } catch {}
   }
@@ -254,7 +258,9 @@
           navidromeUser,
           navidromePassword: navidromePassword || undefined,
           sleepTimerDefault,
-          dailyLimitMinutes
+          dailyLimitMinutes,
+          maxItemsPerCategory,
+          podcastEpisodeLimit
         })
       });
       if (res.ok) {
@@ -645,6 +651,40 @@
 
           <!-- 4. REGELN & LIMITS -->
           {:else if activeTab === 'rules'}
+            <div class="settings-section">
+              <h3>{strings.parent.rules.curationTitle}</h3>
+              <p class="section-desc">{strings.parent.rules.curationDesc}</p>
+              <div class="choice-group">
+                {#each [0, 10, 15, 20, 30] as count}
+                  <button
+                    type="button"
+                    class="choice-btn"
+                    class:selected={maxItemsPerCategory === count}
+                    onclick={() => (maxItemsPerCategory = count)}
+                  >
+                    {count === 0 ? strings.parent.rules.itemsAll : `${count} Titel`}
+                  </button>
+                {/each}
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h3>{strings.parent.rules.podcastLimitTitle}</h3>
+              <p class="section-desc">{strings.parent.rules.podcastLimitDesc}</p>
+              <div class="choice-group">
+                {#each [10, 20, 30, 50, 0] as count}
+                  <button
+                    type="button"
+                    class="choice-btn"
+                    class:selected={podcastEpisodeLimit === count}
+                    onclick={() => (podcastEpisodeLimit = count)}
+                  >
+                    {count === 0 ? strings.parent.rules.episodesAll : `${count} Folgen`}
+                  </button>
+                {/each}
+              </div>
+            </div>
+
             <div class="settings-section">
               <h3>{strings.parent.rules.sleepTimerTitle}</h3>
               <div class="choice-group">

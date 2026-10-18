@@ -198,6 +198,13 @@
                 />
               </div>
 
+              <!-- Indikator auf dem Cover: Fertig gehört (Grünes Häkchen) -->
+              {#if item.progress?.finished}
+                <div class="card-finished-badge">
+                  <Icon name="check" size={22} color="#ffffff" />
+                </div>
+              {/if}
+
               <!-- Indikator auf dem Cover: Serie, Playlist oder Folgennummer -->
               {#if item.kind === 'series'}
                 <div class="card-sticker-badge series-badge">
@@ -260,8 +267,12 @@
             class:is-playlist={item.kind === 'playlist'}
             onclick={() => onSelectItem(item)}
           >
-            <div class="list-index-badge">
-              <span>{item.sequence || (index + 1)}</span>
+            <div class="list-index-badge" class:is-finished={item.progress?.finished}>
+              {#if item.progress?.finished}
+                <Icon name="check" size={20} color="#ffffff" />
+              {:else}
+                <span>{item.sequence || (index + 1)}</span>
+              {/if}
             </div>
 
             <div class="list-cover">
@@ -516,6 +527,22 @@
     background: linear-gradient(135deg, #f43f5e, #be123c);
   }
 
+  .card-finished-badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981, #059669);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    z-index: 2;
+  }
+
   .sticker-star {
     font-size: 14px;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
@@ -680,6 +707,12 @@
     font-weight: 800;
     color: var(--text-primary);
     flex-shrink: 0;
+  }
+
+  .list-index-badge.is-finished {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.45);
   }
 
   .list-cover {

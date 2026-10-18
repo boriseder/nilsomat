@@ -28,6 +28,7 @@ export interface Track {        // spielbare Einheit (Kapitel, Episode, Lied)
   streamUrl: string;     // IMMER /media/stream/<id>
   startOffsetSec?: number; // für ABS-Kapitel in einer Datei
   coverUrl?: string;     // Track-spezifisches Cover (falls vorhanden)
+  finished?: boolean;    // Wurde dieser Track bereits fertig gehört
 }
 
 export interface ContentProvider {

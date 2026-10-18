@@ -103,7 +103,9 @@ parentRoutes.get('/config', (c) => {
     navidromeUser: cfg.navidromeUser || '',
     hasNavidromePassword: !!cfg.navidromePassword,
     sleepTimerDefault: cfg.sleepTimerDefault || 0,
-    dailyLimitMinutes: cfg.dailyLimitMinutes || 0
+    dailyLimitMinutes: cfg.dailyLimitMinutes || 0,
+    maxItemsPerCategory: cfg.maxItemsPerCategory || 0,
+    podcastEpisodeLimit: cfg.podcastEpisodeLimit || 30
   });
 });
 
@@ -142,6 +144,8 @@ parentRoutes.post('/config', async (c) => {
   if (body.navidromePassword !== undefined && body.navidromePassword !== '') updates.navidromePassword = body.navidromePassword;
   if (body.sleepTimerDefault !== undefined) updates.sleepTimerDefault = Number(body.sleepTimerDefault);
   if (body.dailyLimitMinutes !== undefined) updates.dailyLimitMinutes = Number(body.dailyLimitMinutes);
+  if (body.maxItemsPerCategory !== undefined) updates.maxItemsPerCategory = Number(body.maxItemsPerCategory);
+  if (body.podcastEpisodeLimit !== undefined) updates.podcastEpisodeLimit = Number(body.podcastEpisodeLimit);
 
   db.saveConfig(updates);
   reloadProvidersFromDB();

@@ -445,12 +445,20 @@ export class AudiobookshelfProvider implements ContentProvider {
           const trackId = this.makeTrackId(parsed.libraryId, parsed.itemId, `ep_${ep.id}`);
           const streamId = `${parsed.libraryId}:${parsed.itemId}:${fileId}`;
 
+          const isFinished = Boolean(
+            ep.progress?.isFinished ||
+            ep.isFinished ||
+            ep.userProgress?.isFinished ||
+            (ep.progress?.progress && ep.progress.progress >= 0.95)
+          );
+
           tracks.push({
             id: trackId,
             title: ep.title || 'Episode',
             durationSec: Math.round(ep.duration || 0),
             startOffsetSec: 0,
-            streamUrl: `/media/stream/abs:${streamId}`
+            streamUrl: `/media/stream/abs:${streamId}`,
+            finished: isFinished
           });
         });
 
