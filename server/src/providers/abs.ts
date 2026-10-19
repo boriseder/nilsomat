@@ -607,7 +607,12 @@ export class AudiobookshelfProvider implements ContentProvider {
     }
   }
 
-  async streamAudio(rawItemId: string, fileId: string, rangeHeader?: string): Promise<Response> {
+  async streamAudio(
+    rawItemId: string,
+    fileId: string,
+    rangeHeader?: string,
+    signal?: AbortSignal
+  ): Promise<Response> {
     const headers: Record<string, string> = {};
     if (rangeHeader) {
       headers['Range'] = rangeHeader;
@@ -615,7 +620,7 @@ export class AudiobookshelfProvider implements ContentProvider {
 
     return this.authenticatedFetch(
       `${this.config.baseUrl}/api/items/${rawItemId}/file/${fileId}`,
-      { headers }
+      { headers, signal }
     );
   }
 }

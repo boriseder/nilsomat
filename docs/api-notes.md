@@ -63,7 +63,8 @@ Dieses Dokument sammelt verbindliche Erkenntnisse, Endpunkt-Spezifikationen und 
   - Parameter: `id=<coverArtId>`, `size=<px>`.
   - Liefert Binärbild.
 - **Audio-Streaming (`stream.view`):**
-  - Parameter: `id=<songId>`.
+  - Parameter: `id=<songId>`, `format=raw`, `estimateContentLength=true`.
+  - Wichtig: Ohne `format=raw` transkodiert Navidrome per `ffmpeg` auf dem Server, was zu 3–8 s Startverzögerung und fehlerhaften Range-Headern führt. Mit `format=raw` wird die Originaldatei direkt gestreamt.
   - Unterstützt HTTP-Range-Requests (`Range: bytes=start-end`), liefert 206 Partial Content mit `Content-Range` und `Accept-Ranges: bytes`.
 - **Fortschritt & Scrobbling (Abschnitt 4.2):**
   - Für Musik wird kein Fortschritt gespeichert (`getProgress()` liefert `null`, `saveProgress()` ist ein No-Op).

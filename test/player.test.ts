@@ -8,16 +8,34 @@ class MockAudio {
   duration = 0;
   paused = true;
   preload = 'auto';
-  addEventListener = vi.fn();
-  removeEventListener = vi.fn();
+  listeners: Record<string, ((...args: any[]) => void)[]> = {};
+  addEventListener = vi.fn((event: string, handler: (...args: any[]) => void) => {
+    if (!this.listeners[event]) this.listeners[event] = [];
+    this.listeners[event].push(handler);
+  });
+  removeEventListener = vi.fn((event: string, handler: (...args: any[]) => void) => {
+    if (this.listeners[event]) {
+      this.listeners[event] = this.listeners[event].filter((h) => h !== handler);
+    }
+  });
   play = vi.fn().mockResolvedValue(undefined);
   pause = vi.fn();
   load = vi.fn();
+  trigger(event: string, ...args: any[]) {
+    this.listeners[event]?.forEach((h) => h(...args));
+  }
 }
+
+let activeMockAudio: MockAudio | null = null;
 
 if (typeof globalThis.Audio === 'undefined') {
   // @ts-expect-error Mock
-  globalThis.Audio = MockAudio;
+  globalThis.Audio = class extends MockAudio {
+    constructor() {
+      super();
+      activeMockAudio = this;
+    }
+  };
 }
 if (typeof navigator !== 'undefined' && !('mediaSession' in navigator)) {
   // @ts-expect-error Mock
@@ -115,5 +133,46 @@ describe('Player & Sleep-Timer (AGENTS.md Abschnitt 5.2 & 7)', () => {
     audioEngine.seek(0);
     audioEngine.previous();
     expect(audioEngine.getState().trackIndex).toBe(0);
+  });
+
+  it('schaltet auch bei Kapitel 1 mit startOffsetSec 0 automatisch zum nächsten Kapitel weiter', async () => {
+    const { audioEngine } = await import('../client/src/player/AudioEngine.js');
+    audioEngine.init();
+
+    const chapterBook: Item = {
+      id: 'abs:lib1:singlefile',
+      section: 'books',
+      kind: 'audiobook',
+      title: 'Kapitelbuch',
+      coverUrl: '/media/cover/abs:lib1:singlefile?w=640'
+    };
+
+    const chapterTracks: Track[] = [
+      {
+        id: 'abs:lib1:singlefile:ch1',
+        title: 'Kapitel 1',
+        durationSec: 100,
+        startOffsetSec: 0,
+        streamUrl: '/media/stream/abs:lib1:singlefile:audio'
+      },
+      {
+        id: 'abs:lib1:singlefile:ch2',
+        title: 'Kapitel 2',
+        durationSec: 150,
+        startOffsetSec: 100,
+        streamUrl: '/media/stream/abs:lib1:singlefile:audio'
+      }
+    ];
+
+    await audioEngine.playItem(chapterBook, chapterTracks, 0);
+    expect(audioEngine.getState().trackIndex).toBe(0);
+
+    // timeupdate bei Erreichen des Kapitel-Endes (100 s)
+    if (activeMockAudio) {
+      activeMockAudio.currentTime = 100;
+      activeMockAudio.trigger('timeupdate');
+      expect(audioEngine.getState().trackIndex).toBe(1);
+      expect(audioEngine.getState().currentTrack?.id).toBe('abs:lib1:singlefile:ch2');
+    }
   });
 });

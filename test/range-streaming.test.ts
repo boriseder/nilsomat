@@ -44,4 +44,30 @@ describe('HTTP Range Streaming Proxy (AGENTS.md Abschnitt 2 & 7)', () => {
     expect(res.headers.get('Content-Length')).toBe('500');
     expect(res.headers.get('Content-Type')).toBe('audio/mp4');
   });
+
+  it('unterstützt HEAD-Requests für Metadaten-Probes von Safari mit leerem Body', async () => {
+    const mockFetch = async () => {
+      const headers = new Headers();
+      headers.set('Content-Length', '10000');
+      headers.set('Content-Type', 'audio/mp4');
+      return new Response(null, { status: 200, headers });
+    };
+
+    const mockProvider = new AudiobookshelfProvider(
+      { baseUrl: 'http://abs.test' },
+      mockFetch as any
+    );
+    setABSProvider(mockProvider);
+
+    const res = await app.request('/media/stream/abs:lib1:book1:file1', {
+      method: 'HEAD'
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Accept-Ranges')).toBe('bytes');
+    expect(res.headers.get('Content-Length')).toBe('10000');
+    expect(res.headers.get('Content-Type')).toBe('audio/mp4');
+    const bodyText = await res.text();
+    expect(bodyText).toBe('');
+  });
 });

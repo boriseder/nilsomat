@@ -36,6 +36,9 @@ class AudioEngine {
   private listeners: Set<StateListener> = new Set();
   private retryCount: number = 0;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private stallTimer: ReturnType<typeof setTimeout> | null = null;
+  private isTransitioning: boolean = false;
+  private preloadedTrackId: string | null = null;
 
   private constructor() {
     sleepTimer.setCallback(() => {
@@ -124,14 +127,15 @@ class AudioEngine {
 
     this.audio.addEventListener('timeupdate', () => {
       if (this.audio && this.currentTrack) {
+        const isChapter = this.currentTrack.startOffsetSec !== undefined;
         const trackStart = this.currentTrack.startOffsetSec || 0;
         const trackDuration = this.currentTrack.durationSec || 0;
 
-        if (trackStart > 0) {
+        if (isChapter) {
           const rel = Math.max(0, this.audio.currentTime - trackStart);
           this.currentTime = rel;
 
-          // Falls Kapitel in Einzeldatei sein Ende erreicht hat
+          // Falls Kapitel in Einzeldatei sein Ende erreicht hat (auch Kapitel 1 bei Start 0)
           if (trackDuration > 0 && rel >= trackDuration) {
             this.next();
             return;
@@ -140,6 +144,7 @@ class AudioEngine {
           this.currentTime = this.audio.currentTime;
         }
 
+        this.checkPreloadNextTrack();
         this.updateMediaSessionPosition();
         this.notify();
       }
@@ -167,7 +172,15 @@ class AudioEngine {
     this.audio.addEventListener('playing', () => {
       this.isLoading = false;
       this.retryCount = 0;
+      if (this.stallTimer) {
+        clearTimeout(this.stallTimer);
+        this.stallTimer = null;
+      }
       this.notify();
+    });
+
+    this.audio.addEventListener('stalled', () => {
+      this.handleStall();
     });
 
     this.audio.addEventListener('error', () => {
@@ -175,6 +188,19 @@ class AudioEngine {
     });
 
     this.setupMediaSessionHandlers();
+  }
+
+  private handleStall(): void {
+    if (!this.isPlaying || !this.audio || this.audio.paused) return;
+    this.isLoading = true;
+    this.notify();
+
+    if (this.stallTimer) clearTimeout(this.stallTimer);
+    this.stallTimer = setTimeout(() => {
+      if (this.isPlaying && this.audio && !this.audio.paused && this.audio.readyState < 3) {
+        this.handlePlaybackError();
+      }
+    }, 4000);
   }
 
   private handlePlaybackError(): void {
@@ -187,14 +213,49 @@ class AudioEngine {
       if (this.retryTimer) clearTimeout(this.retryTimer);
       this.retryTimer = setTimeout(() => {
         if (!this.audio || !this.currentTrack) return;
-        this.audio.src = this.currentTrack.streamUrl;
-        this.audio.currentTime = savedTime;
+        const targetSrc = this.currentTrack.streamUrl;
+        const audioPos = (this.currentTrack.startOffsetSec || 0) + savedTime;
+
+        this.audio.pause();
+        this.audio.src = targetSrc;
+
+        if (audioPos > 0) {
+          const onLoaded = () => {
+            if (this.audio) {
+              try {
+                this.audio.currentTime = audioPos;
+              } catch {}
+            }
+          };
+          this.audio.addEventListener('loadedmetadata', onLoaded, { once: true });
+        }
+        this.audio.load();
         this.audio.play().catch(() => {});
       }, delay);
     } else {
       this.isLoading = false;
       this.isPlaying = false;
       this.notify();
+    }
+  }
+
+  private checkPreloadNextTrack(): void {
+    if (!this.playlist.length || this.trackIndex >= this.playlist.length - 1) return;
+    const nextTrack = this.playlist[this.trackIndex + 1];
+    if (!nextTrack || nextTrack.id === this.preloadedTrackId) return;
+
+    // Vorwärmen, wenn wir in den letzten 20 Sekunden des aktuellen Tracks sind
+    const shouldPreload =
+      (this.duration > 0 && this.currentTime >= this.duration - 20) ||
+      (this.duration > 0 && this.duration <= 30 && this.currentTime >= this.duration / 2);
+
+    if (shouldPreload) {
+      this.preloadedTrackId = nextTrack.id;
+      // HTTP GET mit 1-Byte-Range wärmt DNS, TLS, Verbindung und Backend-Cache ohne Datenlast vor
+      fetch(nextTrack.streamUrl, {
+        method: 'GET',
+        headers: { Range: 'bytes=0-1' }
+      }).catch(() => {});
     }
   }
 
@@ -244,6 +305,7 @@ class AudioEngine {
         this.notify();
       });
     } else {
+      this.audio.pause();
       this.audio.src = targetSrc;
       const audioPos = (track.startOffsetSec || 0) + initialOffset;
       if (audioPos > 0) {
@@ -256,12 +318,14 @@ class AudioEngine {
         };
         this.audio.addEventListener('loadedmetadata', onLoaded, { once: true });
       }
+      this.audio.load();
       this.audio.play().catch(() => {
         this.isPlaying = false;
         this.isLoading = false;
         this.notify();
       });
     }
+    this.isTransitioning = false;
   }
 
   public playTrackIndex(index: number): void {
@@ -328,7 +392,9 @@ class AudioEngine {
   }
 
   public next(): void {
+    if (this.isTransitioning) return;
     if (this.trackIndex < this.playlist.length - 1) {
+      this.isTransitioning = true;
       const nextIndex = this.trackIndex + 1;
       this.playItem(this.currentItem!, this.playlist, nextIndex, 0);
     } else {

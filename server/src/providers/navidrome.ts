@@ -268,12 +268,16 @@ export class NavidromeProvider implements ContentProvider {
     }
   }
 
-  async streamAudio(songId: string, rangeHeader?: string): Promise<Response> {
-    const url = this.buildUrl('stream.view', { id: songId });
+  async streamAudio(songId: string, rangeHeader?: string, signal?: AbortSignal): Promise<Response> {
+    const url = this.buildUrl('stream.view', {
+      id: songId,
+      format: 'raw',
+      estimateContentLength: 'true'
+    });
     const headers: Record<string, string> = {};
     if (rangeHeader) {
       headers['Range'] = rangeHeader;
     }
-    return this.fetchFn(url, { headers });
+    return this.fetchFn(url, { headers, signal });
   }
 }

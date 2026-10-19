@@ -229,6 +229,7 @@ describe('Navidrome Provider mit Fixtures (AGENTS.md Abschnitt 4.2)', () => {
       .jpeg()
       .toBuffer();
 
+    let capturedStreamUrl: string | undefined;
     const mockFetch = async (url: string, init?: RequestInit) => {
       if (url.includes('getCoverArt.view')) {
         return new Response(new Uint8Array(validCover), {
@@ -237,6 +238,7 @@ describe('Navidrome Provider mit Fixtures (AGENTS.md Abschnitt 4.2)', () => {
         });
       }
       if (url.includes('stream.view')) {
+        capturedStreamUrl = url;
         capturedRange = (init?.headers as any)?.['Range'];
         const headers = new Headers();
         headers.set('Content-Range', 'bytes 1000-1999/50000');
@@ -274,6 +276,8 @@ describe('Navidrome Provider mit Fixtures (AGENTS.md Abschnitt 4.2)', () => {
 
     expect(streamRes.status).toBe(206);
     expect(capturedRange).toBe('bytes=1000-1999');
+    expect(capturedStreamUrl).toContain('format=raw');
+    expect(capturedStreamUrl).toContain('estimateContentLength=true');
     expect(streamRes.headers.get('Content-Range')).toBe('bytes 1000-1999/50000');
     expect(streamRes.headers.get('Accept-Ranges')).toBe('bytes');
   });

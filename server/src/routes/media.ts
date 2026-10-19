@@ -86,9 +86,10 @@ mediaRoutes.get('/cover/:id', async (c) => {
 
 // Audio-Stream-Proxy mit Range-Support gemäß Abschnitt 2 & 7
 // /media/stream/<id>
-mediaRoutes.get('/stream/:id', async (c) => {
+mediaRoutes.on(['GET', 'HEAD'], '/stream/:id', async (c) => {
   const id = c.req.param('id');
   const rangeHeader = c.req.header('Range');
+  const signal = c.req.raw.signal;
   let upstreamRes: Response | null = null;
 
   try {
@@ -98,14 +99,14 @@ mediaRoutes.get('/stream/:id', async (c) => {
       if (!parsed || !parsed.partId) {
         return c.text('Ungültige Audio-ID', 400);
       }
-      upstreamRes = await absProvider.streamAudio(parsed.itemId, parsed.partId, rangeHeader);
+      upstreamRes = await absProvider.streamAudio(parsed.itemId, parsed.partId, rangeHeader, signal);
     } else if (id.startsWith('nd:')) {
       const ndProvider = getNavidromeProvider();
       const parsed = ndProvider.parseId(id);
       if (!parsed || parsed.kind !== 'track') {
         return c.text('Ungültige Audio-ID', 400);
       }
-      upstreamRes = await ndProvider.streamAudio(parsed.id, rangeHeader);
+      upstreamRes = await ndProvider.streamAudio(parsed.id, rangeHeader, signal);
     } else {
       return c.text('Ungültige Audio-ID', 400);
     }
@@ -121,13 +122,27 @@ mediaRoutes.get('/stream/:id', async (c) => {
       }
     }
 
+    if (!headers.has('content-type')) {
+      headers.set('content-type', 'audio/mpeg');
+    }
+
     headers.set('Cache-Control', 'no-cache');
+
+    if (c.req.method === 'HEAD') {
+      return new Response(null, {
+        status: upstreamRes.status,
+        headers
+      });
+    }
 
     return new Response(upstreamRes.body, {
       status: upstreamRes.status,
       headers
     });
   } catch {
+    if (signal?.aborted) {
+      return new Response(null, { status: 499 });
+    }
     return c.text('Streaming-Fehler', 502);
   }
 });

@@ -57,10 +57,16 @@ const port = Number(process.env.PORT) || 8080;
 
 if (process.env.NODE_ENV !== 'test') {
   console.log(JSON.stringify({ level: 'info', message: `Nils-o-mat BFF running on port ${port}` }));
-  serve({
+  const server = serve({
     fetch: app.fetch,
     port
   });
+  // Node 18+ Standard-RequestTimeout (300 s) deaktivieren, damit lange Audio-Streams nicht abbrechen
+  if ('requestTimeout' in server) {
+    (server as any).requestTimeout = 0;
+    (server as any).headersTimeout = 60000;
+    (server as any).keepAliveTimeout = 60000;
+  }
 }
 
 export default app;
