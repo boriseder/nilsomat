@@ -75,6 +75,9 @@
           <Icon name="books" size={72} color="#ffffff" />
         </div>
         <span class="tile-label">{strings.kid.sections.books}</span>
+        <div class="tile-action-badge" aria-hidden="true">
+          <Icon name="play" size={26} color="#ffffff" />
+        </div>
       </button>
     {/if}
 
@@ -88,6 +91,9 @@
           <Icon name="podcasts" size={72} color="#ffffff" />
         </div>
         <span class="tile-label">{strings.kid.sections.podcasts}</span>
+        <div class="tile-action-badge" aria-hidden="true">
+          <Icon name="play" size={26} color="#ffffff" />
+        </div>
       </button>
     {/if}
 
@@ -101,6 +107,9 @@
           <Icon name="music" size={72} color="#ffffff" />
         </div>
         <span class="tile-label">{strings.kid.sections.music}</span>
+        <div class="tile-action-badge" aria-hidden="true">
+          <Icon name="play" size={26} color="#ffffff" />
+        </div>
       </button>
     {/if}
   </main>
@@ -172,6 +181,7 @@
     font-weight: 900;
     letter-spacing: -0.02em;
     background: linear-gradient(135deg, #ffffff 40%, #e2e8f0 100%);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
@@ -184,15 +194,14 @@
     justify-content: center;
     gap: 36px;
     padding: 32px;
-    flex-wrap: wrap;
     max-width: 1200px;
     margin: 0 auto;
     width: 100%;
   }
 
   .tile {
-    width: clamp(250px, 25vw, 320px);
-    height: clamp(250px, 25vw, 320px);
+    width: clamp(260px, 26vw, 320px);
+    height: clamp(260px, 26vw, 320px);
     border-radius: 44px;
     display: flex;
     flex-direction: column;
@@ -229,6 +238,10 @@
 
   .tile:active {
     transform: scale(0.95);
+  }
+
+  .tile-action-badge {
+    display: none;
   }
 
   .tile-books {
@@ -270,5 +283,82 @@
     font-weight: 900;
     letter-spacing: -0.01em;
     text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  }
+
+  /* iPad Hochformat (Portrait): 3 breite, gestapelte Hero-Cards */
+  @media (orientation: portrait) {
+    .grid-container {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 16px 32px 32px 32px;
+      max-width: 640px;
+    }
+
+    .tile {
+      width: 100%;
+      height: 140px;
+      flex-direction: row;
+      justify-content: flex-start;
+      align-items: center;
+      padding: 0 32px;
+      gap: 24px;
+      border-radius: 36px;
+    }
+
+    .tile::before {
+      border-radius: 36px 36px 0 0;
+    }
+
+    .tile:hover {
+      transform: translateY(-4px) scale(1.02);
+    }
+
+    .tile:active {
+      transform: scale(0.97);
+    }
+
+    .tile-icon-box {
+      width: 84px;
+      height: 84px;
+      border-radius: 26px;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1.5px solid rgba(255, 255, 255, 0.28);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      flex-shrink: 0;
+    }
+
+    .tile-icon-box :global(.icon-svg) {
+      width: 52px;
+      height: 52px;
+    }
+
+    .tile-label {
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      text-align: left;
+    }
+
+    .tile-action-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      margin-left: auto;
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+
+    .tile:hover .tile-action-badge {
+      transform: scale(1.08) translateX(2px);
+      background: rgba(255, 255, 255, 0.3);
+    }
   }
 </style>
